@@ -93,6 +93,7 @@ export async function GET(request: NextRequest): Promise<Response> {
           `,
       )
       .eq("ticket_type", databaseType)
+      .eq("status", "UNUSED")
       .order("ticket_code", {
         ascending: true,
       })
