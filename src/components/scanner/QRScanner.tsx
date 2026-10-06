@@ -1,6 +1,8 @@
 "use client";
 
+import "./scanner.css";
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { Html5Qrcode } from "html5-qrcode";
 
 type TicketResult = {
@@ -37,9 +39,7 @@ function formatDate(value: string | null | undefined): string {
 
   const date = new Date(value);
 
-  if (Number.isNaN(date.getTime())) {
-    return "—";
-  }
+  if (Number.isNaN(date.getTime())) return "—";
 
   return new Intl.DateTimeFormat("en-IN", {
     day: "2-digit",
@@ -54,9 +54,7 @@ function formatDateTime(value: string | null | undefined): string {
 
   const date = new Date(value);
 
-  if (Number.isNaN(date.getTime())) {
-    return "—";
-  }
+  if (Number.isNaN(date.getTime())) return "—";
 
   return new Intl.DateTimeFormat("en-IN", {
     day: "2-digit",
@@ -72,54 +70,55 @@ function formatDateTime(value: string | null | undefined): string {
 
 function CameraIcon() {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M9 5.5 10.2 3h3.6L15 5.5H19A2.5 2.5 0 0 1 21.5 8v9A2.5 2.5 0 0 1 19 19.5H5A2.5 2.5 0 0 1 2.5 17V8A2.5 2.5 0 0 1 5 5.5h4Z" />
-      <circle cx="12" cy="12.5" r="3.5" />
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M7.5 7.5 9 5h6l1.5 2.5H20a1.5 1.5 0 0 1 1.5 1.5v8A1.5 1.5 0 0 1 20 18.5H4A1.5 1.5 0 0 1 2.5 17V9A1.5 1.5 0 0 1 4 7.5h3.5Z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+      <circle cx="12" cy="13" r="3.2" stroke="currentColor" strokeWidth="1.5" />
     </svg>
   );
 }
 
-function ShieldIcon() {
+function ArrowIcon() {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M12 3 20 6v5.7c0 4.6-3 7.8-8 9.3-5-1.5-8-4.7-8-9.3V6l8-3Z" />
-      <path d="m8.7 12 2.1 2.1 4.6-4.6" />
-    </svg>
-  );
-}
-
-function RefreshIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M20 11a8 8 0 0 0-14.7-4L3 9" />
-      <path d="M3 4v5h5" />
-      <path d="M4 13a8 8 0 0 0 14.7 4L21 15" />
-      <path d="M21 20v-5h-5" />
-    </svg>
-  );
-}
-
-function XIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="m7 7 10 10M17 7 7 17" />
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M5 12h13m-6-6 6 6-6 6"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
 
 function CheckIcon() {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="m5 12.5 4.2 4.2L19 7" />
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="m5 12.5 4.3 4.3L19 7"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
 
-function WarningIcon() {
+function CloseIcon() {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M12 3.5 21 20H3l9-16.5Z" />
-      <path d="M12 9v5M12 17h.01" />
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="m7 7 10 10M17 7 7 17"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
@@ -132,22 +131,18 @@ export default function QRScanner() {
   const [result, setResult] = useState<ScanResponse | null>(null);
   const [error, setError] = useState("");
   const [isScanning, setIsScanning] = useState(false);
-  const [isStarting, setIsStarting] = useState(false);
 
   const stopScanner = useCallback(async () => {
     const scanner = scannerRef.current;
 
-    if (!scanner) {
-      setIsScanning(false);
-      return;
-    }
+    if (!scanner) return;
 
     try {
       if (scanner.isScanning) {
         await scanner.stop();
       }
     } catch {
-      // Camera was already stopped.
+      // Scanner may already be stopped.
     }
 
     setIsScanning(false);
@@ -155,9 +150,7 @@ export default function QRScanner() {
 
   const handleQRCode = useCallback(
     async (decodedText: string) => {
-      if (processingRef.current) {
-        return;
-      }
+      if (processingRef.current) return;
 
       processingRef.current = true;
 
@@ -172,7 +165,7 @@ export default function QRScanner() {
           success: false,
           valid: false,
           status: "INVALID",
-          message: "This QR code is not a valid event ticket.",
+          message: "This QR code is not a valid EntryPass ticket.",
         });
 
         processingRef.current = false;
@@ -190,7 +183,7 @@ export default function QRScanner() {
           success: false,
           valid: false,
           status: "INVALID",
-          message: "This QR code is missing ticket credentials.",
+          message: "This QR code is not a valid EntryPass ticket.",
         });
 
         processingRef.current = false;
@@ -212,7 +205,6 @@ export default function QRScanner() {
         });
 
         const data = (await response.json()) as ScanResponse;
-
         setResult(data);
       } catch (scanError) {
         console.error("Ticket scan error:", scanError);
@@ -231,41 +223,19 @@ export default function QRScanner() {
   );
 
   const startScanner = useCallback(async () => {
-    if (isScanning || isStarting || processingRef.current) {
-      return;
-    }
+    if (isScanning || processingRef.current) return;
 
     setError("");
-    setIsStarting(true);
 
     try {
-      if (scannerRef.current) {
-        try {
-          if (scannerRef.current.isScanning) {
-            await scannerRef.current.stop();
-          }
-
-          await scannerRef.current.clear();
-        } catch {
-          // Existing scanner can be discarded.
-        }
-      }
-
       const scanner = new Html5Qrcode(READER_ID);
-
       scannerRef.current = scanner;
 
       await scanner.start(
+        { facingMode: "environment" },
         {
-          facingMode: "environment",
-        },
-        {
-          fps: 12,
-          qrbox: {
-            width: 270,
-            height: 270,
-          },
-          aspectRatio: 1,
+          fps: 10,
+          qrbox: { width: 280, height: 280 },
         },
         (decodedText) => {
           void handleQRCode(decodedText);
@@ -278,18 +248,12 @@ export default function QRScanner() {
       }
     } catch (scannerError) {
       console.error("Camera error:", scannerError);
-
       setError(
-        "Camera access was blocked. Allow camera permission in your browser and try again.",
+        "Camera access is unavailable. Allow camera permission and try again.",
       );
-
       setIsScanning(false);
-    } finally {
-      if (mountedRef.current) {
-        setIsStarting(false);
-      }
     }
-  }, [handleQRCode, isScanning, isStarting]);
+  }, [handleQRCode, isScanning]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -299,7 +263,7 @@ export default function QRScanner() {
 
       const scanner = scannerRef.current;
 
-      if (scanner?.isScanning) {
+      if (scanner && scanner.isScanning) {
         void scanner.stop();
       }
     };
@@ -309,7 +273,6 @@ export default function QRScanner() {
     await stopScanner();
 
     processingRef.current = false;
-
     setResult(null);
     setError("");
 
@@ -317,293 +280,206 @@ export default function QRScanner() {
       if (mountedRef.current) {
         void startScanner();
       }
-    }, 120);
+    }, 100);
   };
 
   const isValid = result?.success === true && result?.valid === true;
   const isUsed = result?.status === "USED";
-  const isError = result?.status === "ERROR";
 
-  if (result) {
-    return (
-      <main
-        className={`scanner-shell result-shell ${
-          isValid ? "is-valid" : "is-denied"
-        }`}
-      >
-        <div className="scanner-glow scanner-glow-one" />
-        <div className="scanner-glow scanner-glow-two" />
+  return (
+    <main className="apple-scanner-page">
+      <header className="apple-scanner-nav">
+        <Link
+          href="/"
+          className="apple-scanner-logo"
+          aria-label="EntryPass home"
+        >
+          ENTRY<span>PASS</span>
+        </Link>
 
-        <header className="scanner-topbar">
-          <div className="brand-lockup">
-            <div className="brand-mark">
-              <ShieldIcon />
+        <nav className="apple-scanner-links" aria-label="Main navigation">
+          <Link href="/admin/scanner" className="active">
+            Scanner
+          </Link>
+          <Link href="/admin/tickets">Tickets</Link>
+        </nav>
+      </header>
+
+      {!result ? (
+        <section className="apple-scanner-main">
+          <div className="apple-scanner-heading">
+            <div className="apple-scanner-eyebrow">EVENT ACCESS</div>
+
+            <h1>
+              Scan. Verify.
+              <br />
+              <span>Welcome in.</span>
+            </h1>
+
+            <p>Point the camera at the QR code on the attendee ticket.</p>
+          </div>
+
+          <div className="apple-camera-card">
+            <div className="apple-camera-topline">
+              <span>
+                <CameraIcon />
+                Camera
+              </span>
+
+              <span className={isScanning ? "camera-online" : ""}>
+                <i />
+                {isScanning ? "Camera active" : "Camera ready"}
+              </span>
             </div>
 
-            <div>
-              <strong>
-                ENTRY<span>PASS</span>
-              </strong>
+            <div className="apple-camera-stage">
+              <div id={READER_ID} />
 
-              <small>EVENT ACCESS CONTROL</small>
-            </div>
-          </div>
-
-          <div className="gate-pill">
-            <i />
-            {GATE}
-          </div>
-        </header>
-
-        <section className="result-card">
-          <div
-            className={`result-status-icon ${
-              isValid ? "success" : isUsed ? "warning" : "danger"
-            }`}
-          >
-            {isValid ? <CheckIcon /> : isUsed ? <WarningIcon /> : <XIcon />}
-          </div>
-
-          <div className="result-kicker">
-            {isValid
-              ? "VERIFIED TICKET"
-              : isUsed
-                ? "DUPLICATE ENTRY"
-                : isError
-                  ? "SYSTEM ERROR"
-                  : "INVALID TICKET"}
-          </div>
-
-          <h1>
-            {isValid
-              ? "Entry Approved"
-              : isUsed
-                ? "Already Checked In"
-                : "Entry Denied"}
-          </h1>
-
-          <p className="result-copy">
-            {isValid
-              ? "This ticket is valid. The attendee may enter the venue."
-              : result.message}
-          </p>
-
-          {result.ticket && (
-            <div className="ticket-summary">
-              <div className="ticket-id-row">
-                <span>Ticket</span>
-                <strong>{result.ticket.ticketId}</strong>
+              <div className="apple-scan-frame" aria-hidden="true">
+                <span className="scan-corner tl" />
+                <span className="scan-corner tr" />
+                <span className="scan-corner bl" />
+                <span className="scan-corner br" />
+                {isScanning && <span className="apple-scan-line" />}
               </div>
 
-              <div className="summary-grid">
+              {!isScanning && !error && (
+                <div className="apple-camera-placeholder">
+                  <div className="apple-camera-icon">
+                    <CameraIcon />
+                  </div>
+                  <strong>Camera is ready</strong>
+                  <span>Start the scanner to activate your camera</span>
+                </div>
+              )}
+
+              {error && (
+                <div className="apple-camera-placeholder">
+                  <div className="apple-camera-icon error">
+                    <CloseIcon />
+                  </div>
+                  <strong>Camera unavailable</strong>
+                  <span>{error}</span>
+                </div>
+              )}
+            </div>
+
+            {!isScanning && !error && (
+              <button
+                type="button"
+                className="apple-start-button"
+                onClick={() => void startScanner()}
+              >
+                Start camera
+                <ArrowIcon />
+              </button>
+            )}
+
+            {error && (
+              <button
+                type="button"
+                className="apple-start-button"
+                onClick={() => void startScanner()}
+              >
+                Try again
+                <ArrowIcon />
+              </button>
+            )}
+
+            {isScanning && (
+              <div className="apple-scanning-note">
+                <i />
+                Scanning for a ticket
+                <span>Gate 01</span>
+              </div>
+            )}
+          </div>
+
+          <div className="apple-scanner-note">
+            <span>SECURE ENTRY</span>
+            <span>Each ticket can only be accepted once.</span>
+          </div>
+        </section>
+      ) : (
+        <section className="apple-result-main">
+          <div className={`apple-result-card ${isValid ? "valid" : "invalid"}`}>
+            <div
+              className={`apple-result-icon ${isValid ? "success" : "danger"}`}
+            >
+              {isValid ? <CheckIcon /> : <CloseIcon />}
+            </div>
+
+            <div className="apple-result-eyebrow">
+              {isValid
+                ? "TICKET VERIFIED"
+                : isUsed
+                  ? "SECURITY CHECK"
+                  : "TICKET REJECTED"}
+            </div>
+
+            <h1>{isValid ? "Entry valid." : "Entry denied."}</h1>
+
+            <p className="apple-result-message">
+              {isValid
+                ? "Ticket accepted. Entry has been recorded."
+                : result.message}
+            </p>
+
+            {result.ticket && (
+              <div className="apple-result-grid">
                 <div>
-                  <span>TYPE</span>
+                  <span>Ticket ID</span>
+                  <strong>{result.ticket.ticketId}</strong>
+                </div>
+
+                <div>
+                  <span>Ticket type</span>
                   <strong>{result.ticket.ticketType}</strong>
                 </div>
 
                 <div>
-                  <span>GATE</span>
-                  <strong>{result.ticket.gate || GATE}</strong>
-                </div>
-
-                <div>
-                  <span>EVENT DATE</span>
+                  <span>Date</span>
                   <strong>{formatDate(result.ticket.date)}</strong>
                 </div>
 
                 <div>
-                  <span>{isUsed ? "CHECK-IN TIME" : "VENUE"}</span>
-
-                  <strong>
-                    {isUsed && result.ticket.checkInTime
-                      ? formatDateTime(result.ticket.checkInTime)
-                      : result.ticket.venue}
-                  </strong>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <button
-            className="scan-next-button"
-            type="button"
-            onClick={() => void scanAgain()}
-          >
-            <RefreshIcon />
-            SCAN NEXT TICKET
-          </button>
-        </section>
-
-        <footer className="scanner-footer">
-          <span>
-            <i /> Scanner secure
-          </span>
-
-          <span>Powered by EntryPass</span>
-        </footer>
-      </main>
-    );
-  }
-
-  return (
-    <main className="scanner-shell">
-      <div className="scanner-noise" />
-
-      <div className="scanner-glow scanner-glow-one" />
-      <div className="scanner-glow scanner-glow-two" />
-
-      <header className="scanner-topbar">
-        <div className="brand-lockup">
-          <div className="brand-mark">
-            <ShieldIcon />
-          </div>
-
-          <div>
-            <strong>
-              ENTRY<span>PASS</span>
-            </strong>
-
-            <small>EVENT ACCESS CONTROL</small>
-          </div>
-        </div>
-
-        <div className="gate-pill">
-          <i />
-          {GATE}
-        </div>
-      </header>
-
-      <section className="scanner-content">
-        <div className="scanner-intro">
-          <div className="live-badge">
-            <i /> LIVE SCANNER
-          </div>
-
-          <h1>
-            Scan. Verify.
-            <br />
-            <em>Welcome In.</em>
-          </h1>
-
-          <p>Point the camera at the QR code on the attendee&apos;s ticket.</p>
-        </div>
-
-        <div className={`camera-card ${isScanning ? "camera-active" : ""}`}>
-          <div className="camera-topline">
-            <span>
-              <CameraIcon />
-              CAMERA
-            </span>
-
-            <span className={isScanning ? "online" : ""}>
-              <i />
-              {isScanning ? "READY TO SCAN" : "CAMERA OFF"}
-            </span>
-          </div>
-
-          <div className="camera-stage">
-            <div id={READER_ID} />
-
-            <div className="scan-frame" aria-hidden="true">
-              <span className="corner tl" />
-              <span className="corner tr" />
-              <span className="corner bl" />
-              <span className="corner br" />
-
-              {isScanning && <div className="scan-line" />}
-            </div>
-
-            {!isScanning && !isStarting && !error && (
-              <div className="camera-placeholder">
-                <div className="placeholder-icon">
-                  <CameraIcon />
+                  <span>Venue</span>
+                  <strong>{result.ticket.venue}</strong>
                 </div>
 
-                <strong>Camera is ready</strong>
+                {isUsed && result.ticket.checkInTime && (
+                  <div>
+                    <span>Checked in</span>
+                    <strong>{formatDateTime(result.ticket.checkInTime)}</strong>
+                  </div>
+                )}
 
-                <span>Start the scanner to activate your camera</span>
+                {isUsed && result.ticket.gate && (
+                  <div>
+                    <span>Gate</span>
+                    <strong>{result.ticket.gate}</strong>
+                  </div>
+                )}
               </div>
             )}
 
-            {isStarting && (
-              <div className="camera-placeholder">
-                <div className="spinner" />
-
-                <strong>Starting camera…</strong>
-
-                <span>Allow camera access when prompted</span>
-              </div>
-            )}
-          </div>
-
-          <div className="camera-hint">
-            <span>●</span>
-            Center the QR code inside the frame
-          </div>
-        </div>
-
-        {error && (
-          <div className="scanner-error">
-            <div className="error-icon">
-              <WarningIcon />
-            </div>
-
-            <div>
-              <strong>Camera unavailable</strong>
-              <span>{error}</span>
-            </div>
-
-            <button type="button" onClick={() => void startScanner()}>
-              RETRY
+            <button
+              type="button"
+              className="apple-next-button"
+              onClick={() => void scanAgain()}
+            >
+              Scan next ticket
+              <ArrowIcon />
             </button>
           </div>
-        )}
+        </section>
+      )}
 
-        {!isScanning && !isStarting && !error && (
-          <button
-            className="start-button"
-            type="button"
-            onClick={() => void startScanner()}
-          >
-            <CameraIcon />
-            START SCANNER
-          </button>
-        )}
-
-        {isScanning && (
-          <div className="scanner-active-note">
-            <div className="pulse-dot" />
-
-            <span>Scanning continuously</span>
-
-            <b>Hold the ticket steady</b>
-          </div>
-        )}
-
-        <div className="security-strip">
-          <div>
-            <ShieldIcon />
-
-            <span>
-              <strong>Secure validation</strong> QR is verified against the
-              event database
-            </span>
-          </div>
-
-          <div>
-            <span>
-              <strong>Gate</strong> {GATE}
-            </span>
-          </div>
-        </div>
-      </section>
-
-      <footer className="scanner-footer">
+      <footer className="apple-scanner-footer">
         <span>
-          <i /> Scanner secure
+          ENTRY<span>PASS</span>
         </span>
-
-        <span>Powered by EntryPass</span>
+        <span>Made by, Anirudh Sonawane</span>
       </footer>
     </main>
   );
