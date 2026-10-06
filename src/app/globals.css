@@ -24,3 +24,433 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.ticket-page {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 20px;
+  overflow: hidden;
+  background: #f4f1eb;
+}
+
+.ticket-background {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      circle at 10% 10%,
+      rgba(180, 140, 70, 0.15),
+      transparent 30%
+    ),
+    radial-gradient(
+      circle at 90% 90%,
+      rgba(180, 140, 70, 0.12),
+      transparent 35%
+    );
+}
+
+.ticket-card {
+  position: relative;
+  z-index: 2;
+  width: min(100%, 520px);
+  padding: 48px 42px;
+  text-align: center;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(180, 140, 70, 0.25);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.08);
+}
+
+.ticket-label {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.35em;
+  color: #4b5563;
+}
+
+.ticket-line {
+  width: 120px;
+  height: 1px;
+  margin: 20px auto;
+  background: #b88a45;
+}
+
+.ticket-card h1 {
+  margin: 0;
+  font-size: clamp(42px, 8vw, 64px);
+  line-height: 0.95;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: #111111;
+}
+
+.ticket-card h2 {
+  margin: 18px 0 0;
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  color: #a97939;
+}
+
+.qr-container {
+  display: flex;
+  justify-content: center;
+  margin: 32px auto;
+  padding: 16px;
+  width: fit-content;
+  border-radius: 18px;
+  background: #ffffff;
+  border: 1px solid #d5b47a;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.06);
+}
+
+.ticket-info {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.ticket-info span {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.25em;
+  color: #6b7280;
+}
+
+.ticket-info strong {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #111111;
+}
+
+.ticket-divider {
+  width: 100%;
+  height: 1px;
+  margin: 22px 0;
+  background: #e5dfd5;
+}
+
+@media (max-width: 600px) {
+  .ticket-page {
+    padding: 20px 12px;
+  }
+
+  .ticket-card {
+    padding: 35px 22px;
+    border-radius: 22px;
+  }
+
+  .ticket-card h1 {
+    font-size: 42px;
+  }
+
+  .ticket-card h2 {
+    font-size: 16px;
+  }
+
+  .qr-container svg {
+    width: 240px;
+    height: 240px;
+  }
+}
+
+/* Admin Scanner CSS */
+
+.scanner-page {
+  min-height: 100vh;
+  padding: 50px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #f4f1eb;
+}
+
+.scanner-header {
+  width: 100%;
+  max-width: 600px;
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.scanner-header span {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  color: #a97939;
+}
+
+.scanner-header h1 {
+  margin: 12px 0 8px;
+  font-size: 42px;
+  font-weight: 800;
+  color: #111111;
+}
+
+.scanner-header p {
+  margin: 0;
+  color: #6b7280;
+}
+
+.scanner-box {
+  width: 100%;
+  max-width: 500px;
+  padding: 20px;
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.08);
+}
+
+#qr-reader {
+  width: 100%;
+}
+
+#qr-reader video {
+  border-radius: 16px;
+}
+
+.scanner-error {
+  margin-top: 20px;
+  padding: 14px 20px;
+  border-radius: 12px;
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.ticket-result {
+  width: 100%;
+  max-width: 600px;
+  padding: 45px 35px;
+  text-align: center;
+  border-radius: 28px;
+  background: #ffffff;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.1);
+}
+
+.result-icon {
+  width: 70px;
+  height: 70px;
+  margin: 0 auto 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #111111;
+  color: #ffffff;
+  font-size: 34px;
+  font-weight: 700;
+}
+
+.result-label {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  color: #a97939;
+}
+
+.ticket-result h1 {
+  margin: 10px 0 0;
+  font-size: 38px;
+  font-weight: 800;
+}
+
+.result-divider {
+  width: 100px;
+  height: 1px;
+  margin: 25px auto;
+  background: #b88a45;
+}
+
+.ticket-result h2 {
+  margin: 0;
+  font-size: 28px;
+}
+
+.result-subtitle {
+  margin-top: 8px;
+  color: #a97939;
+  letter-spacing: 0.12em;
+}
+
+.result-grid {
+  margin-top: 30px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  text-align: left;
+}
+
+.result-grid div {
+  padding: 18px;
+  border-radius: 14px;
+  background: #f6f3ed;
+}
+
+.result-grid span {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: #6b7280;
+}
+
+.result-grid strong {
+  display: block;
+  font-size: 15px;
+  color: #111111;
+}
+
+.ticket-result button {
+  width: 100%;
+  margin-top: 30px;
+  padding: 17px;
+  border: 0;
+  border-radius: 12px;
+  background: #111111;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+}
+
+.ticket-result button:hover {
+  opacity: 0.9;
+}
+
+@media (max-width: 600px) {
+  .scanner-header h1 {
+    font-size: 34px;
+  }
+
+  .ticket-result {
+    padding: 35px 20px;
+  }
+
+  .result-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* PDF Generator CSS */
+
+.generator-page {
+  min-height: 100vh;
+  padding: 70px 24px;
+  background: #f4f1eb;
+}
+
+.generator-header {
+  max-width: 900px;
+  margin: 0 auto 45px;
+  text-align: center;
+}
+
+.generator-header span {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  color: #a97939;
+}
+
+.generator-header h1 {
+  margin: 12px 0;
+  font-size: 48px;
+  font-weight: 800;
+  color: #111111;
+}
+
+.generator-header p {
+  color: #6b7280;
+}
+
+.generator-grid {
+  max-width: 900px;
+  margin: auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.generator-card {
+  padding: 35px;
+  border-radius: 24px;
+  background: #ffffff;
+  border: 1px solid #e8e1d7;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.06);
+}
+
+.card-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  color: #a97939;
+}
+
+.generator-card h2 {
+  margin: 10px 0;
+  font-size: 28px;
+  color: #111111;
+}
+
+.generator-card p {
+  min-height: 45px;
+  color: #6b7280;
+  line-height: 1.6;
+}
+
+.generator-card label {
+  display: block;
+  margin: 25px 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.generator-card input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid #ddd6cc;
+  border-radius: 10px;
+  outline: none;
+  font-size: 16px;
+}
+
+.generator-card input:focus {
+  border-color: #b88a45;
+}
+
+.generator-card button {
+  width: 100%;
+  margin-top: 18px;
+  padding: 16px;
+  border: 0;
+  border-radius: 10px;
+  background: #111111;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+}
+
+.generator-card button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 700px) {
+  .generator-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .generator-header h1 {
+    font-size: 36px;
+  }
+}
