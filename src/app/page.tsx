@@ -32,10 +32,6 @@ export default function Home() {
           <Link href="/admin/scanner" className="apple-primary-button">
             Scan a ticket
           </Link>
-
-          <Link href="/admin/tickets" className="apple-secondary-button">
-            Manage tickets
-          </Link>
         </div>
       </section>
 
@@ -43,6 +39,7 @@ export default function Home() {
         <span>
           ENTRY<span>PASS</span>
         </span>
+
         <span>Made by, Anirudh Sonawane</span>
       </footer>
     </main>
