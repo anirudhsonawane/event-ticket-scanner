@@ -1,21 +1,19 @@
 /* =========================================================
    ENTRY PASS — SCANNER
-   Clean white Apple-style interface
+   Clean White Camera Interface
    ========================================================= */
 
 .apple-scanner-page {
-  --scanner-black: #111111;
-  --scanner-text: #171717;
-  --scanner-muted: #6b6b6b;
-  --scanner-light: #8a8a8a;
-  --scanner-border: #e5e5e5;
-  --scanner-border-dark: #d8d8d8;
-  --scanner-surface: #ffffff;
-  --scanner-surface-soft: #f7f7f7;
-  --scanner-lime: #d9ff38;
-  --scanner-success: #16803c;
-  --scanner-danger: #c62828;
-  --scanner-warning: #9a6700;
+  --black: #111111;
+  --text: #171717;
+  --muted: #737373;
+  --light-muted: #999999;
+  --border: #e5e5e5;
+  --soft: #f6f6f6;
+  --camera-bg: #e9e9e9;
+  --lime: #d9ff38;
+  --success: #16803c;
+  --danger: #c62828;
 
   position: relative;
 
@@ -26,7 +24,7 @@
 
   background: #ffffff;
 
-  color: var(--scanner-text);
+  color: var(--text);
 
   font-family:
     var(--font-geist-sans),
@@ -39,6 +37,7 @@
     sans-serif;
 
   -webkit-font-smoothing: antialiased;
+
   text-rendering: optimizeLegibility;
 }
 
@@ -46,32 +45,12 @@
    BACKGROUND
    ========================================================= */
 
-.apple-scanner-background {
-  position: fixed;
-
-  inset: 0;
-
-  z-index: 0;
-
-  pointer-events: none;
-
-  overflow: hidden;
-
-  background: #ffffff;
-}
-
-.apple-background-grid {
-  position: absolute;
-
-  inset: 0;
-
-  opacity: 0;
-
-  pointer-events: none;
-}
-
-.apple-background-glow {
-  display: none;
+.apple-scanner-background,
+.apple-background-grid,
+.apple-background-glow,
+.apple-background-glow-one,
+.apple-background-glow-two {
+  display: none !important;
 }
 
 /* =========================================================
@@ -95,16 +74,13 @@
 
   justify-content: space-between;
 
-  border-bottom: 1px solid var(--scanner-border);
+  border-bottom: 1px solid var(--border);
 
-  background: rgba(255, 255, 255, 0.96);
-
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+  background: #ffffff;
 }
 
 .apple-scanner-logo {
-  color: var(--scanner-black);
+  color: #111111;
 
   font-size: 20px;
 
@@ -118,7 +94,7 @@
 }
 
 .apple-scanner-logo span {
-  color: #777777;
+  color: #858585;
 }
 
 .apple-scanner-nav-right {
@@ -126,37 +102,10 @@
 
   align-items: center;
 
-  gap: 10px;
+  gap: 9px;
 }
 
-.apple-gate-pill {
-  min-height: 30px;
-
-  padding: 0 12px;
-
-  display: inline-flex;
-
-  align-items: center;
-
-  justify-content: center;
-
-  border: 1px solid var(--scanner-border);
-
-  border-radius: 999px;
-
-  background: #ffffff;
-
-  color: #555555;
-
-  font-size: 9px;
-
-  font-weight: 700;
-
-  letter-spacing: 0.12em;
-
-  text-transform: uppercase;
-}
-
+.apple-gate-pill,
 .apple-live-pill {
   min-height: 30px;
 
@@ -166,21 +115,21 @@
 
   align-items: center;
 
-  gap: 7px;
+  justify-content: center;
 
-  border: 1px solid var(--scanner-border);
+  border: 1px solid var(--border);
 
   border-radius: 999px;
 
   background: #ffffff;
 
-  color: #555555;
+  color: #666666;
 
-  font-size: 9px;
+  font-size: 8px;
 
   font-weight: 700;
 
-  letter-spacing: 0.11em;
+  letter-spacing: 0.12em;
 
   text-transform: uppercase;
 }
@@ -191,11 +140,11 @@
   width: 6px;
   height: 6px;
 
-  flex: 0 0 6px;
+  margin-right: 7px;
 
   border-radius: 50%;
 
-  background: #777777;
+  background: #888888;
 }
 
 /* =========================================================
@@ -209,9 +158,7 @@
 
   width: 100%;
 
-  min-height: calc(100svh - 76px);
-
-  padding: 70px 24px 110px;
+  padding: 68px 24px 100px;
 
   display: flex;
 
@@ -223,9 +170,9 @@
 .apple-scanner-heading {
   width: 100%;
 
-  max-width: 720px;
+  max-width: 700px;
 
-  margin: 0 auto 42px;
+  margin-bottom: 42px;
 
   text-align: center;
 }
@@ -241,7 +188,7 @@
 
   border-radius: 5px;
 
-  background: var(--scanner-lime);
+  background: var(--lime);
 
   color: #111111;
 
@@ -249,17 +196,17 @@
 
   font-weight: 800;
 
-  letter-spacing: 0.16em;
+  letter-spacing: 0.15em;
 
   text-transform: uppercase;
 }
 
 .apple-scanner-heading h1 {
-  margin: 20px 0 0;
+  margin: 19px 0 0;
 
-  color: var(--scanner-black);
+  color: #111111;
 
-  font-size: clamp(42px, 7vw, 76px);
+  font-size: clamp(42px, 7vw, 74px);
 
   font-weight: 600;
 
@@ -268,14 +215,18 @@
   letter-spacing: -0.07em;
 }
 
+.apple-scanner-heading h1 span {
+  color: #8a8a8a;
+}
+
 .apple-scanner-heading p {
   max-width: 430px;
 
   margin: 18px auto 0;
 
-  color: var(--scanner-muted);
+  color: #777777;
 
-  font-size: 14px;
+  font-size: 13px;
 
   line-height: 1.55;
 }
@@ -285,11 +236,11 @@
    ========================================================= */
 
 .apple-camera-card {
-  width: min(100%, 780px);
+  width: min(100%, 820px);
 
   overflow: hidden;
 
-  border: 1px solid var(--scanner-border);
+  border: 1px solid var(--border);
 
   border-radius: 26px;
 
@@ -297,13 +248,13 @@
 
   box-shadow:
     0 1px 2px rgba(0, 0, 0, 0.03),
-    0 12px 40px rgba(0, 0, 0, 0.06);
+    0 16px 45px rgba(0, 0, 0, 0.06);
 }
 
 .apple-camera-topline {
   min-height: 58px;
 
-  padding: 0 18px;
+  padding: 0 19px;
 
   display: flex;
 
@@ -311,7 +262,7 @@
 
   justify-content: space-between;
 
-  border-bottom: 1px solid var(--scanner-border);
+  border-bottom: 1px solid var(--border);
 
   background: #ffffff;
 }
@@ -325,9 +276,9 @@
 
   color: #222222;
 
-  font-size: 10px;
+  font-size: 9px;
 
-  font-weight: 700;
+  font-weight: 800;
 
   letter-spacing: 0.12em;
 
@@ -346,9 +297,9 @@
 }
 
 .apple-camera-status {
-  color: #777777;
+  color: #888888;
 
-  font-size: 9px;
+  font-size: 8px;
 
   font-weight: 700;
 
@@ -366,38 +317,46 @@
 
   width: 100%;
 
-  min-height: 500px;
+  height: min(62vw, 520px);
+
+  min-height: 390px;
 
   overflow: hidden;
 
-  background: #f2f2f2;
+  background: var(--camera-bg);
 }
 
-.apple-qr-reader {
-  position: absolute;
+/* =========================================================
+   HTML5-QRCODE CONTAINER
+   ========================================================= */
 
-  inset: 0;
+.apple-qr-reader {
+  position: absolute !important;
+
+  inset: 0 !important;
 
   z-index: 1;
 
-  width: 100%;
-
-  height: 100%;
-
-  overflow: hidden;
-
-  background: #eeeeee;
-}
-
-.apple-qr-reader > div {
   width: 100% !important;
 
   height: 100% !important;
 
+  margin: 0 !important;
+
+  padding: 0 !important;
+
+  overflow: hidden !important;
+
+  background: #000000 !important;
+
   border: 0 !important;
 }
 
-.apple-qr-reader video {
+/* =========================================================
+   HTML5-QRCODE INTERNAL CONTAINER
+   ========================================================= */
+
+.apple-qr-reader > div {
   position: absolute !important;
 
   inset: 0 !important;
@@ -406,12 +365,56 @@
 
   height: 100% !important;
 
-  max-width: none !important;
+  margin: 0 !important;
 
-  object-fit: cover !important;
+  padding: 0 !important;
+
+  background: transparent !important;
 
   border: 0 !important;
 }
+
+/* =========================================================
+   ACTUAL CAMERA VIDEO
+   ========================================================= */
+
+.apple-qr-reader video,
+#qr-reader video,
+#qr-reader__scan_region video {
+  position: absolute !important;
+
+  top: 0 !important;
+
+  left: 0 !important;
+
+  display: block !important;
+
+  width: 100% !important;
+
+  height: 100% !important;
+
+  min-width: 100% !important;
+
+  min-height: 100% !important;
+
+  max-width: none !important;
+
+  max-height: none !important;
+
+  margin: 0 !important;
+
+  padding: 0 !important;
+
+  object-fit: cover !important;
+
+  background: #000000 !important;
+
+  border: 0 !important;
+}
+
+/* =========================================================
+   HTML5-QRCODE SCAN REGION
+   ========================================================= */
 
 #qr-reader__scan_region {
   position: absolute !important;
@@ -422,33 +425,37 @@
 
   height: 100% !important;
 
-  border: 0 !important;
+  margin: 0 !important;
+
+  padding: 0 !important;
 
   overflow: hidden !important;
+
+  background: transparent !important;
+
+  border: 0 !important;
 }
 
-#qr-reader__scan_region img {
+#qr-reader__scan_region > img {
   display: none !important;
 }
 
-#qr-reader__dashboard {
-  display: none !important;
-}
+/* =========================================================
+   HTML5-QRCODE CONTROLS
+   ========================================================= */
 
-#qr-reader__dashboard_section {
-  display: none !important;
-}
-
-#qr-reader__dashboard_section_csr {
-  display: none !important;
-}
-
-#qr-reader__dashboard_section_swaplink {
-  display: none !important;
-}
-
+#qr-reader__dashboard,
+#qr-reader__dashboard_section,
+#qr-reader__dashboard_section_csr,
+#qr-reader__dashboard_section_swaplink,
 #qr-reader__header_message {
   display: none !important;
+}
+
+#qr-reader,
+#qr-reader > div,
+#qr-reader__scan_region {
+  border: 0 !important;
 }
 
 /* =========================================================
@@ -472,28 +479,48 @@
 
   padding: 30px;
 
-  background: #f5f5f5;
-
-  color: #222222;
+  background: #f2f2f2;
 
   text-align: center;
 }
 
 .apple-camera-placeholder.error-state {
-  background: #fafafa;
+  background: #f8f8f8;
+}
+
+.apple-camera-placeholder strong {
+  margin-top: 17px;
+
+  color: #222222;
+
+  font-size: 17px;
+
+  font-weight: 650;
+
+  letter-spacing: -0.025em;
+}
+
+.apple-camera-placeholder > span {
+  max-width: 320px;
+
+  margin-top: 8px;
+
+  color: #858585;
+
+  font-size: 11px;
+
+  line-height: 1.5;
 }
 
 .apple-camera-icon {
-  width: 62px;
-  height: 62px;
-
-  margin-bottom: 20px;
+  width: 60px;
+  height: 60px;
 
   display: grid;
 
   place-items: center;
 
-  border: 1px solid #dddddd;
+  border: 1px solid #dedede;
 
   border-radius: 18px;
 
@@ -501,88 +528,16 @@
 
   color: #222222;
 
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
-}
-
-.apple-camera-icon.error {
-  color: var(--scanner-danger);
+  box-shadow: 0 5px 18px rgba(0, 0, 0, 0.05);
 }
 
 .apple-camera-icon svg {
-  width: 28px;
-  height: 28px;
+  width: 27px;
+  height: 27px;
 }
 
-.apple-camera-placeholder h2 {
-  margin: 0;
-
-  color: #161616;
-
-  font-size: 20px;
-
-  font-weight: 600;
-
-  letter-spacing: -0.04em;
-}
-
-.apple-camera-placeholder p {
-  max-width: 360px;
-
-  margin: 9px 0 0;
-
-  color: #777777;
-
-  font-size: 12px;
-
-  line-height: 1.55;
-}
-
-/* =========================================================
-   START BUTTON
-   ========================================================= */
-
-.apple-start-button {
-  min-height: 48px;
-
-  margin-top: 22px;
-
-  padding: 0 21px;
-
-  display: inline-flex;
-
-  align-items: center;
-
-  justify-content: center;
-
-  border: 0;
-
-  border-radius: 999px;
-
-  background: #111111;
-
-  color: #ffffff;
-
-  font-size: 11px;
-
-  font-weight: 700;
-
-  letter-spacing: 0.02em;
-
-  cursor: pointer;
-
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
-
-  transition:
-    transform 160ms ease,
-    background 160ms ease;
-}
-
-.apple-start-button:hover {
-  background: #2a2a2a;
-}
-
-.apple-start-button:active {
-  transform: scale(0.97);
+.apple-camera-icon.error {
+  color: var(--danger);
 }
 
 /* =========================================================
@@ -592,12 +547,12 @@
 .apple-scan-frame {
   position: absolute;
 
-  z-index: 5;
+  z-index: 6;
 
   top: 50%;
   left: 50%;
 
-  width: min(64%, 310px);
+  width: min(58%, 310px);
 
   aspect-ratio: 1 / 1;
 
@@ -605,22 +560,22 @@
 
   pointer-events: none;
 
-  border: 1px solid rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.9);
 
-  border-radius: 20px;
+  border-radius: 18px;
 
-  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.16);
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.18);
 }
 
 .apple-scan-frame.scanning {
-  border-color: rgba(255, 255, 255, 0.92);
+  border-color: #ffffff;
 }
 
 .scan-corner {
   position: absolute;
 
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
 
   border-color: #ffffff;
 
@@ -674,58 +629,113 @@
 .apple-scan-line {
   position: absolute;
 
-  z-index: 6;
+  z-index: 7;
 
-  left: 18px;
-  right: 18px;
+  left: 14px;
+  right: 14px;
 
-  top: 12%;
+  top: 10%;
 
   height: 1px;
 
-  background: rgba(255, 255, 255, 0.9);
+  background: #ffffff;
 
-  box-shadow: none;
+  opacity: 0.9;
 
-  opacity: 0;
-
-  transition: opacity 180ms ease;
-
-  animation: cleanScanLine 2.2s ease-in-out infinite;
+  animation: scannerLine 2.2s ease-in-out infinite;
 }
 
-.apple-scan-frame.scanning .apple-scan-line {
-  opacity: 1;
-}
-
-.apple-scan-glow {
-  display: none;
-}
-
-@keyframes cleanScanLine {
+@keyframes scannerLine {
   0% {
-    top: 12%;
+    top: 10%;
   }
 
   50% {
-    top: 88%;
+    top: 90%;
   }
 
   100% {
-    top: 12%;
+    top: 10%;
   }
 }
 
+.apple-scan-glow {
+  display: none !important;
+}
+
 /* =========================================================
-   SCANNING NOTE
+   CAMERA BUTTON AREA
+   ========================================================= */
+
+.apple-camera-action {
+  min-height: 76px;
+
+  padding: 14px 18px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  border-top: 1px solid var(--border);
+
+  background: #ffffff;
+}
+
+.apple-start-button {
+  min-height: 46px;
+
+  padding: 0 21px;
+
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 10px;
+
+  border: 0;
+
+  border-radius: 999px;
+
+  background: #111111;
+
+  color: #ffffff;
+
+  font-size: 10px;
+
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    transform 160ms ease,
+    background 160ms ease;
+}
+
+.apple-start-button:hover {
+  background: #292929;
+}
+
+.apple-start-button:active {
+  transform: scale(0.97);
+}
+
+.apple-start-button svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* =========================================================
+   SCANNING STATUS
    ========================================================= */
 
 .apple-scanning-note {
-  width: min(100%, 780px);
-
   min-height: 58px;
 
-  padding: 0 17px;
+  padding: 0 18px;
 
   display: flex;
 
@@ -733,23 +743,15 @@
 
   justify-content: space-between;
 
-  gap: 20px;
-
-  border-right: 1px solid var(--scanner-border);
-
-  border-bottom: 1px solid var(--scanner-border);
-
-  border-left: 1px solid var(--scanner-border);
-
-  border-radius: 0 0 20px 20px;
+  border-top: 1px solid var(--border);
 
   background: #ffffff;
 
   color: #666666;
 
-  font-size: 10px;
+  font-size: 9px;
 
-  font-weight: 600;
+  font-weight: 650;
 }
 
 .apple-scanning-note-left {
@@ -768,13 +770,13 @@
 
   border-radius: 50%;
 
-  background: #222222;
+  background: #111111;
 }
 
 .apple-scanning-gate {
   color: #999999;
 
-  font-size: 9px;
+  font-size: 8px;
 
   font-weight: 700;
 
@@ -784,11 +786,11 @@
 }
 
 /* =========================================================
-   SECURITY STRIP
+   SECURITY
    ========================================================= */
 
 .apple-security-strip {
-  width: min(100%, 780px);
+  width: min(100%, 820px);
 
   margin-top: 18px;
 
@@ -800,11 +802,11 @@
 
   gap: 13px;
 
-  border: 1px solid var(--scanner-border);
+  border: 1px solid var(--border);
 
   border-radius: 16px;
 
-  background: #fafafa;
+  background: #ffffff;
 }
 
 .apple-security-icon {
@@ -817,11 +819,11 @@
 
   place-items: center;
 
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--border);
 
   border-radius: 11px;
 
-  background: #ffffff;
+  background: #fafafa;
 
   color: #333333;
 }
@@ -860,7 +862,7 @@
 .apple-security-status {
   margin-left: auto;
 
-  color: #777777;
+  color: #888888;
 
   font-size: 8px;
 
@@ -869,12 +871,10 @@
   letter-spacing: 0.1em;
 
   text-transform: uppercase;
-
-  white-space: nowrap;
 }
 
 /* =========================================================
-   RESULT
+   RESULT PAGE
    ========================================================= */
 
 .apple-result-main {
@@ -884,7 +884,7 @@
 
   min-height: calc(100svh - 76px);
 
-  padding: 60px 24px 110px;
+  padding: 60px 24px 100px;
 
   display: flex;
 
@@ -898,61 +898,51 @@
 
   padding: 42px;
 
-  border: 1px solid var(--scanner-border);
+  border: 1px solid var(--border);
 
-  border-radius: 28px;
+  border-radius: 26px;
 
   background: #ffffff;
 
   box-shadow:
     0 1px 2px rgba(0, 0, 0, 0.03),
-    0 20px 60px rgba(0, 0, 0, 0.07);
+    0 18px 55px rgba(0, 0, 0, 0.06);
 
   text-align: center;
 }
 
 .apple-result-icon {
-  width: 72px;
-  height: 72px;
+  width: 70px;
+  height: 70px;
 
-  margin: 0 auto 22px;
+  margin: 0 auto 20px;
 
   display: grid;
 
   place-items: center;
 
-  border: 1px solid var(--scanner-border);
+  border: 1px solid var(--border);
 
-  border-radius: 22px;
+  border-radius: 20px;
 
   background: #f7f7f7;
-
-  color: #222222;
 }
 
 .apple-result-icon svg {
-  width: 31px;
-  height: 31px;
+  width: 30px;
+  height: 30px;
 }
 
 .apple-result-icon.success {
-  color: var(--scanner-success);
+  color: var(--success);
 
   background: #f5faf6;
 
-  border-color: #d8eadc;
-}
-
-.apple-result-icon.warning {
-  color: var(--scanner-warning);
-
-  background: #fffaf0;
-
-  border-color: #eee2c6;
+  border-color: #d7eadc;
 }
 
 .apple-result-icon.danger {
-  color: var(--scanner-danger);
+  color: var(--danger);
 
   background: #fff6f6;
 
@@ -962,11 +952,11 @@
 .apple-result-eyebrow {
   color: #888888;
 
-  font-size: 9px;
+  font-size: 8px;
 
   font-weight: 800;
 
-  letter-spacing: 0.16em;
+  letter-spacing: 0.15em;
 
   text-transform: uppercase;
 }
@@ -976,7 +966,7 @@
 
   color: #111111;
 
-  font-size: clamp(34px, 6vw, 52px);
+  font-size: clamp(36px, 6vw, 54px);
 
   font-weight: 600;
 
@@ -986,9 +976,9 @@
 }
 
 .apple-result-message {
-  max-width: 410px;
+  max-width: 420px;
 
-  margin: 13px auto 0;
+  margin: 14px auto 0;
 
   color: #707070;
 
@@ -997,34 +987,30 @@
   line-height: 1.55;
 }
 
-/* =========================================================
-   RESULT INFORMATION
-   ========================================================= */
-
 .apple-result-grid {
-  margin-top: 32px;
+  margin-top: 30px;
 
   display: grid;
 
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(2, 1fr);
 
   gap: 1px;
 
   overflow: hidden;
 
-  border: 1px solid var(--scanner-border);
+  border: 1px solid var(--border);
 
-  border-radius: 17px;
+  border-radius: 16px;
 
-  background: var(--scanner-border);
+  background: var(--border);
 
   text-align: left;
 }
 
 .apple-result-grid > div {
-  min-height: 72px;
+  min-height: 70px;
 
-  padding: 15px;
+  padding: 14px;
 
   background: #ffffff;
 }
@@ -1038,7 +1024,7 @@
 
   font-weight: 700;
 
-  letter-spacing: 0.11em;
+  letter-spacing: 0.1em;
 
   text-transform: uppercase;
 }
@@ -1054,23 +1040,25 @@
 
   font-size: 11px;
 
-  font-weight: 650;
-
   text-overflow: ellipsis;
 
   white-space: nowrap;
 }
 
-/* =========================================================
-   NEXT BUTTON
-   ========================================================= */
-
 .apple-next-button {
   width: 100%;
 
-  min-height: 52px;
+  min-height: 50px;
 
   margin-top: 18px;
+
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 9px;
 
   border: 0;
 
@@ -1080,23 +1068,16 @@
 
   color: #ffffff;
 
-  font-size: 11px;
+  font-size: 10px;
 
   font-weight: 700;
 
   cursor: pointer;
-
-  transition:
-    transform 160ms ease,
-    background 160ms ease;
 }
 
-.apple-next-button:hover {
-  background: #292929;
-}
-
-.apple-next-button:active {
-  transform: scale(0.98);
+.apple-next-button svg {
+  width: 15px;
+  height: 15px;
 }
 
 /* =========================================================
@@ -1110,7 +1091,9 @@
 
   width: 100%;
 
-  padding: 22px 32px max(24px, env(safe-area-inset-bottom));
+  min-height: 70px;
+
+  padding: 20px 32px max(20px, env(safe-area-inset-bottom));
 
   display: flex;
 
@@ -1118,7 +1101,7 @@
 
   justify-content: space-between;
 
-  border-top: 1px solid var(--scanner-border);
+  border-top: 1px solid var(--border);
 
   background: #ffffff;
 }
@@ -1133,7 +1116,12 @@
   letter-spacing: -0.02em;
 }
 
-.apple-footer-copy {
+.apple-footer-brand span {
+  color: #888888;
+}
+
+.apple-footer-copy,
+.apple-footer-year {
   color: #999999;
 
   font-size: 8px;
@@ -1145,16 +1133,8 @@
   text-transform: uppercase;
 }
 
-.apple-footer-year {
-  color: #999999;
-
-  font-size: 8px;
-
-  font-weight: 600;
-}
-
 /* =========================================================
-   HOVER / FOCUS
+   FOCUS
    ========================================================= */
 
 button:focus-visible,
@@ -1162,29 +1142,6 @@ a:focus-visible {
   outline: 2px solid #111111;
 
   outline-offset: 3px;
-}
-
-/* =========================================================
-   TABLET
-   ========================================================= */
-
-@media (max-width: 900px) {
-  .apple-scanner-nav {
-    padding-left: 22px;
-    padding-right: 22px;
-  }
-
-  .apple-scanner-main {
-    padding-top: 55px;
-  }
-
-  .apple-camera-stage {
-    min-height: 440px;
-  }
-
-  .apple-scan-frame {
-    width: min(68%, 300px);
-  }
 }
 
 /* =========================================================
@@ -1206,22 +1163,12 @@ a:focus-visible {
     display: none;
   }
 
-  .apple-live-pill {
-    min-height: 28px;
-
-    padding: 0 9px;
-
-    font-size: 8px;
-  }
-
   .apple-scanner-main {
-    min-height: calc(100svh - 68px);
-
-    padding: 42px 14px 80px;
+    padding: 42px 14px 70px;
   }
 
   .apple-scanner-heading {
-    margin-bottom: 30px;
+    margin-bottom: 28px;
   }
 
   .apple-scanner-heading h1 {
@@ -1231,8 +1178,6 @@ a:focus-visible {
   }
 
   .apple-scanner-heading p {
-    max-width: 330px;
-
     font-size: 12px;
   }
 
@@ -1246,15 +1191,9 @@ a:focus-visible {
     padding: 0 14px;
   }
 
-  .apple-camera-label {
-    font-size: 8px;
-  }
-
-  .apple-camera-status {
-    font-size: 8px;
-  }
-
   .apple-camera-stage {
+    height: 390px;
+
     min-height: 390px;
   }
 
@@ -1272,34 +1211,7 @@ a:focus-visible {
   .apple-scanning-note {
     min-height: 52px;
 
-    padding: 0 13px;
-
-    border-radius: 0 0 16px 16px;
-
-    font-size: 9px;
-  }
-
-  .apple-scanning-gate {
-    font-size: 8px;
-  }
-
-  .apple-security-strip {
-    margin-top: 14px;
-
-    padding: 12px;
-
-    border-radius: 14px;
-  }
-
-  .apple-security-icon {
-    width: 34px;
-    height: 34px;
-
-    flex-basis: 34px;
-  }
-
-  .apple-security-copy span {
-    font-size: 8px;
+    padding: 0 14px;
   }
 
   .apple-security-status {
@@ -1307,9 +1219,7 @@ a:focus-visible {
   }
 
   .apple-result-main {
-    min-height: calc(100svh - 68px);
-
-    padding: 40px 14px 80px;
+    padding: 40px 14px 70px;
   }
 
   .apple-result-card {
@@ -1318,34 +1228,12 @@ a:focus-visible {
     border-radius: 22px;
   }
 
-  .apple-result-icon {
-    width: 62px;
-    height: 62px;
-
-    margin-bottom: 18px;
-
-    border-radius: 18px;
-  }
-
-  .apple-result-icon svg {
-    width: 27px;
-    height: 27px;
-  }
-
   .apple-result-card h1 {
     font-size: 38px;
   }
 
-  .apple-result-message {
-    font-size: 12px;
-  }
-
   .apple-result-grid {
     grid-template-columns: 1fr;
-  }
-
-  .apple-result-grid > div {
-    min-height: 64px;
   }
 
   .apple-scanner-footer {
@@ -1362,20 +1250,14 @@ a:focus-visible {
    ========================================================= */
 
 @media (max-width: 390px) {
-  .apple-scanner-main {
-    padding-top: 34px;
-  }
-
   .apple-camera-stage {
+    height: 350px;
+
     min-height: 350px;
   }
 
   .apple-scan-frame {
     width: 74%;
-  }
-
-  .apple-scanner-heading h1 {
-    font-size: 38px;
   }
 }
 
@@ -1387,22 +1269,10 @@ a:focus-visible {
   *,
   *::before,
   *::after {
-    scroll-behavior: auto !important;
-
     animation-duration: 0.01ms !important;
 
     animation-iteration-count: 1 !important;
 
     transition-duration: 0.01ms !important;
-  }
-}
-
-/* =========================================================
-   SAFETY FALLBACK
-   ========================================================= */
-
-@supports not (backdrop-filter: blur(10px)) {
-  .apple-scanner-nav {
-    background: #ffffff;
   }
 }
