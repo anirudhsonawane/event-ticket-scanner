@@ -1,391 +1,277 @@
 /* =========================================================
    ENTRY PASS — SCANNER
-   Scanner-only stylesheet
+   Apple-style / full viewport / no page scroll
    ========================================================= */
 
-.scanner-shell {
-  --scanner-black: #050505;
-  --scanner-white: #ffffff;
-  --scanner-soft: #f5f5f5;
-  --scanner-muted: #737373;
-  --scanner-muted-light: #a1a1a1;
-  --scanner-border: #e8e8e8;
-  --scanner-dark-border: #252525;
-  --scanner-accent: #d8ff3e;
-  --scanner-red: #ff4d4d;
-  --scanner-green: #16a34a;
+.apple-scanner-page {
+  --black: #1d1d1f;
+  --muted: #6e6e73;
+  --soft: #f5f5f7;
+  --border: #d2d2d7;
+  --accent: #d7ff00;
+  --green: #34c759;
+  --red: #ff3b30;
 
-  min-height: 100vh;
+  width: 100%;
+  height: 100svh;
+  min-height: 100svh;
+
+  overflow: hidden;
 
   display: flex;
-
   flex-direction: column;
 
-  background: var(--scanner-white);
+  background: #ffffff;
+  color: var(--black);
 
-  color: var(--scanner-black);
+  font-family:
+    -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+    "Helvetica Neue", Arial, sans-serif;
 
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
 
-  overflow-x: hidden;
+html:has(.apple-scanner-page),
+body:has(.apple-scanner-page) {
+  height: 100%;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.apple-scanner-page *,
+.apple-scanner-page *::before,
+.apple-scanner-page *::after {
+  box-sizing: border-box;
 }
 
 /* =========================================================
-   TOP NAVIGATION
+   NAVIGATION
    ========================================================= */
 
-.scanner-topbar {
-  width: min(1180px, calc(100% - 48px));
-
-  height: 76px;
+.apple-scanner-nav {
+  width: min(1200px, calc(100% - 48px));
+  height: 64px;
+  min-height: 64px;
 
   margin: 0 auto;
 
   display: flex;
-
   align-items: center;
-
   justify-content: space-between;
 
-  border-bottom: 1px solid var(--scanner-border);
+  border-bottom: 1px solid var(--border);
+
+  flex: 0 0 auto;
 }
 
-/* =========================================================
-   BRAND
-   ========================================================= */
-
-.brand-lockup {
-  display: flex;
-
-  align-items: center;
-
-  gap: 10px;
-
-  color: var(--scanner-black);
-
+.apple-scanner-logo {
+  color: var(--black);
   text-decoration: none;
-}
 
-.brand-mark {
-  width: 34px;
-
-  height: 34px;
-
-  display: grid;
-
-  place-items: center;
-
-  border: 1px solid #dcdcdc;
-
-  border-radius: 9px;
-
-  background: #fafafa;
-
-  color: var(--scanner-black);
-
-  transition:
-    background 0.2s ease,
-    border-color 0.2s ease,
-    transform 0.2s ease;
-}
-
-.brand-lockup:hover .brand-mark {
-  background: var(--scanner-accent);
-
-  border-color: var(--scanner-accent);
-
-  transform: translateY(-1px);
-}
-
-.brand-mark svg,
-.security-strip svg {
-  width: 17px;
-
-  height: 17px;
-
-  fill: none;
-
-  stroke: currentColor;
-
-  stroke-width: 1.7;
-
-  stroke-linecap: round;
-
-  stroke-linejoin: round;
-}
-
-.brand-lockup strong {
-  display: block;
-
-  color: var(--scanner-black);
-
-  font-size: 14px;
-
-  font-weight: 750;
-
+  font-size: 17px;
   line-height: 1;
-
-  letter-spacing: -0.04em;
+  font-weight: 600;
+  letter-spacing: -0.035em;
 }
 
-.brand-lockup strong span {
-  color: #a8c900;
+.apple-scanner-logo span {
+  color: var(--muted);
 }
 
-.brand-lockup small {
-  display: block;
-
-  margin-top: 5px;
-
-  color: var(--scanner-muted);
-
-  font-size: 7px;
-
-  font-weight: 700;
-
-  line-height: 1;
-
-  letter-spacing: 0.18em;
-
-  text-transform: uppercase;
-}
-
-/* =========================================================
-   GATE STATUS
-   ========================================================= */
-
-.gate-pill {
-  min-height: 32px;
-
-  padding: 0 11px;
-
+.apple-scanner-links {
   display: flex;
-
   align-items: center;
-
-  gap: 7px;
-
-  border: 1px solid var(--scanner-border);
-
-  border-radius: 999px;
-
-  background: #ffffff;
-
-  color: #555555;
-
-  font-size: 8px;
-
-  font-weight: 750;
-
-  letter-spacing: 0.11em;
-
-  text-transform: uppercase;
+  gap: 36px;
 }
 
-.gate-pill i,
-.live-badge i,
-.scanner-footer i,
-.scanner-active-note .pulse-dot {
-  width: 6px;
+.apple-scanner-links a {
+  color: var(--muted);
+  text-decoration: none;
 
-  height: 6px;
+  font-size: 15px;
+  line-height: 1;
+  font-weight: 400;
 
-  display: block;
+  transition: color 180ms ease;
+}
 
-  flex: 0 0 6px;
+.apple-scanner-links a:hover,
+.apple-scanner-links a.active {
+  color: var(--black);
+}
 
-  border-radius: 50%;
-
-  background: var(--scanner-accent);
-
-  box-shadow: 0 0 0 4px rgba(216, 255, 62, 0.12);
+.apple-scanner-links a.active {
+  font-weight: 600;
 }
 
 /* =========================================================
-   MAIN CONTENT
+   SCANNER MAIN
    ========================================================= */
 
-.scanner-content {
-  width: min(760px, calc(100% - 40px));
+.apple-scanner-main {
+  width: min(900px, calc(100% - 48px));
+
+  min-height: 0;
 
   margin: 0 auto;
+  padding: 28px 0 18px;
 
-  padding: 76px 0 48px;
+  flex: 1 1 auto;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 /* =========================================================
-   INTRO
+   HEADING
    ========================================================= */
 
-.scanner-intro {
-  margin-bottom: 34px;
+.apple-scanner-heading {
+  width: 100%;
 
   text-align: center;
+
+  flex: 0 0 auto;
 }
 
-.live-badge {
-  display: inline-flex;
+.apple-scanner-eyebrow {
+  width: fit-content;
 
-  align-items: center;
+  margin: 0 auto 17px;
+  padding: 4px 7px 5px;
 
-  gap: 8px;
+  background: var(--accent);
+  color: #111111;
 
-  color: #676767;
-
-  font-size: 8px;
-
+  font-size: 9px;
+  line-height: 1;
   font-weight: 800;
-
-  letter-spacing: 0.17em;
-
-  text-transform: uppercase;
+  letter-spacing: 0.15em;
 }
 
-.scanner-intro h1 {
-  margin: 19px 0 13px;
+.apple-scanner-heading h1 {
+  margin: 0;
 
-  color: var(--scanner-black);
+  color: var(--black);
 
-  font-size: clamp(52px, 8vw, 82px);
-
-  font-weight: 650;
-
+  font-size: clamp(42px, 5.4vw, 68px);
   line-height: 0.9;
-
-  letter-spacing: -0.075em;
+  font-weight: 600;
+  letter-spacing: -0.07em;
 }
 
-.scanner-intro h1 em {
-  color: #a5c700;
-
-  font-style: normal;
+.apple-scanner-heading h1 span {
+  color: #86868b;
 }
 
-.scanner-intro p {
-  max-width: 450px;
+.apple-scanner-heading p {
+  margin: 13px auto 0;
 
-  margin: 0 auto;
+  color: var(--muted);
 
-  color: var(--scanner-muted);
-
-  font-size: 12px;
-
-  font-weight: 450;
-
-  line-height: 1.7;
+  font-size: 13px;
+  line-height: 1.45;
+  letter-spacing: -0.01em;
 }
 
 /* =========================================================
    CAMERA CARD
    ========================================================= */
 
-.camera-card {
-  position: relative;
+.apple-camera-card {
+  width: min(560px, 100%);
 
-  padding: 10px;
+  margin-top: 22px;
+  padding: 8px;
 
-  border: 1px solid #dedede;
-
-  border-radius: 20px;
+  border: 1px solid #d2d2d7;
+  border-radius: 18px;
 
   background: #ffffff;
 
   box-shadow:
-    0 20px 50px rgba(0, 0, 0, 0.07),
-    0 2px 8px rgba(0, 0, 0, 0.04);
+    0 18px 45px rgba(0, 0, 0, 0.08),
+    0 2px 8px rgba(0, 0, 0, 0.035);
+
+  flex: 0 1 auto;
 }
 
 /* =========================================================
-   CAMERA TOP LINE
+   CAMERA HEADER
    ========================================================= */
 
-.camera-topline {
-  min-height: 40px;
+.apple-camera-topline {
+  height: 31px;
 
-  padding: 0 9px;
+  padding: 0 8px;
 
   display: flex;
-
   align-items: center;
-
   justify-content: space-between;
 
-  color: #777777;
+  color: #86868b;
 
-  font-size: 7px;
-
-  font-weight: 800;
-
-  letter-spacing: 0.14em;
-
+  font-size: 8px;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
-.camera-topline span {
-  display: flex;
-
+.apple-camera-topline span {
+  display: inline-flex;
   align-items: center;
-
-  gap: 7px;
+  gap: 6px;
 }
 
-.camera-topline svg {
-  width: 14px;
-
-  height: 14px;
-
-  fill: none;
-
-  stroke: currentColor;
-
-  stroke-width: 1.7;
-
-  stroke-linecap: round;
-
-  stroke-linejoin: round;
+.apple-camera-topline svg {
+  width: 13px;
+  height: 13px;
 }
 
-.camera-topline i {
+.apple-camera-topline span:last-child i {
   width: 6px;
-
   height: 6px;
+
+  display: inline-block;
 
   border-radius: 50%;
 
-  background: #c7c7c7;
+  background: #c7c7cc;
 }
 
-.camera-topline .online {
-  color: #626262;
-}
+.apple-camera-topline span:last-child.camera-online i {
+  background: var(--green);
 
-.camera-topline .online i {
-  background: #9fc500;
-
-  box-shadow: 0 0 0 4px rgba(216, 255, 62, 0.16);
+  box-shadow: 0 0 0 4px rgba(52, 199, 89, 0.11);
 }
 
 /* =========================================================
    CAMERA STAGE
    ========================================================= */
 
-.camera-stage {
+.apple-camera-stage {
   position: relative;
 
-  min-height: 450px;
+  width: 100%;
+  height: clamp(300px, 42vh, 370px);
+
+  min-height: 270px;
 
   overflow: hidden;
 
   display: grid;
-
   place-items: center;
 
-  border-radius: 12px;
+  border-radius: 11px;
 
   background: #080808;
 }
 
-.camera-stage::after {
+.apple-camera-stage::after {
   content: "";
 
   position: absolute;
@@ -398,10 +284,10 @@
 
   background: linear-gradient(
     to bottom,
-    rgba(255, 255, 255, 0.02),
-    transparent 20%,
-    transparent 80%,
-    rgba(0, 0, 0, 0.18)
+    rgba(255, 255, 255, 0.025),
+    transparent 25%,
+    transparent 75%,
+    rgba(0, 0, 0, 0.2)
   );
 }
 
@@ -417,8 +303,7 @@
   z-index: 1;
 
   width: 100% !important;
-
-  height: 100%;
+  height: 100% !important;
 
   border: 0 !important;
 
@@ -427,155 +312,127 @@
 
 #qr-reader video {
   width: 100% !important;
-
   height: 100% !important;
 
-  object-fit: cover;
+  object-fit: cover !important;
 
-  border-radius: 12px;
+  border-radius: 11px;
 }
 
 #qr-reader__scan_region {
   width: 100% !important;
-
   height: 100% !important;
 
   border: 0 !important;
 }
 
-#qr-reader__scan_region img {
-  display: none !important;
-}
-
-#qr-reader__dashboard {
-  display: none !important;
-}
-
-#qr-reader__dashboard_section {
+#qr-reader__scan_region img,
+#qr-reader__dashboard,
+#qr-reader__dashboard_section,
+#qr-reader__header_message {
   display: none !important;
 }
 
 /* =========================================================
-   QR SCANNING FRAME
+   QR FRAME
    ========================================================= */
 
-.scan-frame {
+.apple-scan-frame {
   position: absolute;
 
   z-index: 5;
 
-  width: min(285px, 62vw);
-
-  height: min(285px, 62vw);
+  width: min(230px, 58vw);
+  height: min(230px, 58vw);
 
   pointer-events: none;
 }
 
-.corner {
+.scan-corner {
   position: absolute;
 
-  width: 34px;
+  width: 30px;
+  height: 30px;
 
-  height: 34px;
+  border-color: var(--accent);
 
-  border-color: var(--scanner-accent);
-
-  filter: drop-shadow(0 0 5px rgba(216, 255, 62, 0.45));
+  filter: drop-shadow(0 0 5px rgba(215, 255, 0, 0.45));
 }
 
-.corner.tl {
+.scan-corner.tl {
   top: 0;
-
   left: 0;
 
   border-top: 3px solid;
-
   border-left: 3px solid;
 
-  border-radius: 8px 0 0 0;
+  border-radius: 7px 0 0 0;
 }
 
-.corner.tr {
+.scan-corner.tr {
   top: 0;
-
   right: 0;
 
   border-top: 3px solid;
-
   border-right: 3px solid;
 
-  border-radius: 0 8px 0 0;
+  border-radius: 0 7px 0 0;
 }
 
-.corner.bl {
+.scan-corner.bl {
   bottom: 0;
-
   left: 0;
 
   border-bottom: 3px solid;
-
   border-left: 3px solid;
 
-  border-radius: 0 0 0 8px;
+  border-radius: 0 0 0 7px;
 }
 
-.corner.br {
+.scan-corner.br {
   right: 0;
-
   bottom: 0;
 
   border-right: 3px solid;
-
   border-bottom: 3px solid;
 
-  border-radius: 0 0 8px 0;
+  border-radius: 0 0 7px 0;
 }
 
 /* =========================================================
    SCAN LINE
    ========================================================= */
 
-.scan-line {
+.apple-scan-line {
   position: absolute;
 
-  top: 6px;
-
-  left: 7px;
-
-  right: 7px;
+  top: 4px;
+  left: 5px;
+  right: 5px;
 
   height: 2px;
 
-  z-index: 6;
-
   border-radius: 999px;
 
-  background: var(--scanner-accent);
+  background: var(--accent);
 
   box-shadow:
-    0 0 8px rgba(216, 255, 62, 0.8),
-    0 0 20px rgba(216, 255, 62, 0.35);
+    0 0 8px rgba(215, 255, 0, 0.85),
+    0 0 18px rgba(215, 255, 0, 0.35);
 
-  animation: scanner-line 2.2s ease-in-out infinite;
+  animation: apple-scan-line 2.1s ease-in-out infinite;
 }
 
-@keyframes scanner-line {
-  0% {
+@keyframes apple-scan-line {
+  0%,
+  100% {
     transform: translateY(0);
-
-    opacity: 0.4;
+    opacity: 0.45;
   }
 
   50% {
-    transform: translateY(273px);
-
+    transform: translateY(218px);
     opacity: 1;
-  }
-
-  100% {
-    transform: translateY(0);
-
-    opacity: 0.4;
   }
 }
 
@@ -583,589 +440,310 @@
    CAMERA PLACEHOLDER
    ========================================================= */
 
-.camera-placeholder {
+.apple-camera-placeholder {
   position: absolute;
 
   inset: 0;
 
-  z-index: 2;
+  z-index: 4;
 
   display: flex;
-
   flex-direction: column;
-
   align-items: center;
-
   justify-content: center;
+
+  padding: 20px;
 
   text-align: center;
 
   pointer-events: none;
 }
 
-.placeholder-icon {
-  width: 56px;
-
-  height: 56px;
-
-  margin-bottom: 14px;
-
-  display: grid;
-
-  place-items: center;
-
-  border: 1px solid rgba(255, 255, 255, 0.14);
-
-  border-radius: 16px;
-
-  background: rgba(255, 255, 255, 0.04);
-
-  color: rgba(255, 255, 255, 0.85);
-}
-
-.placeholder-icon svg {
-  width: 24px;
-
-  height: 24px;
-
-  fill: none;
-
-  stroke: currentColor;
-
-  stroke-width: 1.5;
-
-  stroke-linecap: round;
-
-  stroke-linejoin: round;
-}
-
-.camera-placeholder strong {
-  color: #ffffff;
-
-  font-size: 14px;
-
-  font-weight: 600;
-}
-
-.camera-placeholder span {
-  margin-top: 5px;
-
-  color: #858585;
-
-  font-size: 10px;
-}
-
-/* =========================================================
-   CAMERA LOADING
-   ========================================================= */
-
-.spinner {
-  width: 30px;
-
-  height: 30px;
+.apple-camera-icon {
+  width: 48px;
+  height: 48px;
 
   margin-bottom: 12px;
 
-  border: 2px solid rgba(255, 255, 255, 0.16);
+  display: grid;
+  place-items: center;
 
-  border-top-color: var(--scanner-accent);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
 
-  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
 
-  animation: spinner 0.75s linear infinite;
+  color: rgba(255, 255, 255, 0.9);
 }
 
-@keyframes spinner {
-  to {
-    transform: rotate(360deg);
-  }
+.apple-camera-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.apple-camera-icon.error {
+  color: #ff6961;
+}
+
+.apple-camera-placeholder strong {
+  color: #ffffff;
+
+  font-size: 13px;
+  line-height: 1.2;
+  font-weight: 600;
+}
+
+.apple-camera-placeholder span {
+  max-width: 300px;
+
+  margin-top: 5px;
+
+  color: #929297;
+
+  font-size: 9px;
+  line-height: 1.45;
 }
 
 /* =========================================================
-   CAMERA HINT
+   START / NEXT BUTTON
    ========================================================= */
 
-.camera-hint {
-  padding: 13px 5px 3px;
-
-  text-align: center;
-
-  color: #777777;
-
-  font-size: 8px;
-
-  font-weight: 750;
-
-  letter-spacing: 0.12em;
-
-  text-transform: uppercase;
-}
-
-.camera-hint span {
-  margin-right: 5px;
-
-  color: #9fc500;
-}
-
-/* =========================================================
-   PRIMARY BUTTONS
-   ========================================================= */
-
-.start-button,
-.scan-next-button {
+.apple-start-button,
+.apple-next-button {
   width: 100%;
 
-  min-height: 56px;
+  min-height: 45px;
 
-  margin-top: 14px;
+  margin-top: 8px;
+
+  padding: 0 18px;
 
   display: flex;
-
   align-items: center;
-
   justify-content: center;
 
   gap: 9px;
 
   border: 0;
-
   border-radius: 10px;
 
-  background: var(--scanner-black);
-
+  background: var(--black);
   color: #ffffff;
 
   cursor: pointer;
 
-  font-size: 9px;
+  font: inherit;
 
-  font-weight: 850;
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 500;
 
-  letter-spacing: 0.14em;
-
-  text-transform: uppercase;
+  letter-spacing: -0.01em;
 
   transition:
-    transform 0.2s ease,
-    background 0.2s ease,
-    box-shadow 0.2s ease;
+    transform 180ms ease,
+    background 180ms ease;
 }
 
-.start-button:hover,
-.scan-next-button:hover {
-  transform: translateY(-2px);
+.apple-start-button:hover,
+.apple-next-button:hover {
+  background: #333336;
 
-  background: #151515;
-
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px);
 }
 
-.start-button:active,
-.scan-next-button:active {
-  transform: translateY(0);
+.apple-start-button:active,
+.apple-next-button:active {
+  transform: scale(0.99);
 }
 
-.start-button svg,
-.scan-next-button svg {
-  width: 16px;
-
-  height: 16px;
-
-  fill: none;
-
-  stroke: currentColor;
-
-  stroke-width: 1.8;
-
-  stroke-linecap: round;
-
-  stroke-linejoin: round;
-}
-
-.start-button:disabled,
-.scan-next-button:disabled {
-  opacity: 0.45;
-
-  cursor: not-allowed;
-
-  transform: none;
-
-  box-shadow: none;
+.apple-start-button svg,
+.apple-next-button svg {
+  width: 15px;
+  height: 15px;
 }
 
 /* =========================================================
-   ACTIVE SCANNING STATUS
+   SCANNING NOTE
    ========================================================= */
 
-.scanner-active-note {
-  margin-top: 12px;
+.apple-scanning-note {
+  min-height: 27px;
 
-  padding: 11px 13px;
-
-  display: flex;
-
-  align-items: center;
-
-  gap: 8px;
-
-  border: 1px solid #e7e7e7;
-
-  border-radius: 9px;
-
-  background: #fafafa;
-
-  color: #606060;
-
-  font-size: 9px;
-}
-
-.scanner-active-note b {
-  margin-left: auto;
-
-  color: #999999;
-
-  font-weight: 500;
-}
-
-/* =========================================================
-   SECURITY STRIP
-   ========================================================= */
-
-.security-strip {
-  margin-top: 25px;
-
-  padding: 16px 2px;
+  padding: 0 8px;
 
   display: flex;
-
-  align-items: center;
-
-  justify-content: space-between;
-
-  gap: 18px;
-
-  border-top: 1px solid var(--scanner-border);
-
-  border-bottom: 1px solid var(--scanner-border);
-
-  color: #777777;
-
-  font-size: 8px;
-
-  line-height: 1.5;
-}
-
-.security-strip > div {
-  display: flex;
-
-  align-items: center;
-
-  gap: 8px;
-}
-
-.security-strip strong {
-  color: #404040;
-
-  font-weight: 650;
-}
-
-/* =========================================================
-   SCANNER ERROR
-   ========================================================= */
-
-.scanner-error {
-  margin-top: 13px;
-
-  padding: 13px;
-
-  display: flex;
-
-  align-items: center;
-
-  gap: 11px;
-
-  border: 1px solid #ffd6d6;
-
-  border-radius: 10px;
-
-  background: #fff8f8;
-}
-
-.error-icon {
-  width: 34px;
-
-  height: 34px;
-
-  flex: 0 0 34px;
-
-  display: grid;
-
-  place-items: center;
-
-  border: 1px solid #ffd0d0;
-
-  border-radius: 8px;
-
-  background: #fff0f0;
-
-  color: var(--scanner-red);
-}
-
-.error-icon svg {
-  width: 16px;
-
-  height: 16px;
-
-  fill: none;
-
-  stroke: currentColor;
-
-  stroke-width: 1.7;
-
-  stroke-linecap: round;
-
-  stroke-linejoin: round;
-}
-
-.scanner-error div:nth-child(2) {
-  min-width: 0;
-
-  display: flex;
-
-  flex-direction: column;
-
-  gap: 3px;
-}
-
-.scanner-error strong {
-  color: #a33d3d;
-
-  font-size: 9px;
-
-  font-weight: 750;
-}
-
-.scanner-error span {
-  color: #9a6f6f;
-
-  font-size: 8px;
-
-  line-height: 1.45;
-}
-
-.scanner-error button {
-  margin-left: auto;
-
-  padding: 7px 10px;
-
-  border: 1px solid #e7d4d4;
-
-  border-radius: 7px;
-
-  background: #ffffff;
-
-  color: #6e5555;
-
-  cursor: pointer;
-
-  font-size: 7px;
-
-  font-weight: 800;
-
-  letter-spacing: 0.1em;
-
-  text-transform: uppercase;
-}
-
-.scanner-error button:hover {
-  background: #fff4f4;
-}
-
-/* =========================================================
-   FOOTER
-   ========================================================= */
-
-.scanner-footer {
-  width: min(1180px, calc(100% - 48px));
-
-  margin: auto auto 0;
-
-  padding: 22px 0;
-
-  display: flex;
-
-  align-items: center;
-
-  justify-content: space-between;
-
-  border-top: 1px solid var(--scanner-border);
-
-  color: #9a9a9a;
-
-  font-size: 7px;
-
-  font-weight: 700;
-
-  letter-spacing: 0.13em;
-
-  text-transform: uppercase;
-}
-
-.scanner-footer span {
-  display: flex;
-
   align-items: center;
 
   gap: 7px;
+
+  color: #6e6e73;
+
+  font-size: 8px;
+  line-height: 1;
+
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.apple-scanning-note > i {
+  width: 6px;
+  height: 6px;
+
+  border-radius: 50%;
+
+  background: var(--green);
+
+  box-shadow: 0 0 0 4px rgba(52, 199, 89, 0.1);
+}
+
+.apple-scanning-note > span {
+  margin-left: auto;
+
+  color: #a1a1a6;
+}
+
+/* =========================================================
+   SECURITY NOTE
+   ========================================================= */
+
+.apple-scanner-note {
+  width: min(560px, 100%);
+
+  margin-top: 11px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 20px;
+
+  color: #86868b;
+
+  font-size: 8px;
+  line-height: 1.3;
+}
+
+.apple-scanner-note span:first-child {
+  color: #1d1d1f;
+
+  font-weight: 700;
+
+  letter-spacing: 0.12em;
 }
 
 /* =========================================================
    RESULT PAGE
    ========================================================= */
 
-.result-shell {
-  min-height: 100vh;
+.apple-result-main {
+  width: min(760px, calc(100% - 48px));
 
-  display: flex;
+  min-height: 0;
 
-  flex-direction: column;
+  margin: 0 auto;
 
-  background: #ffffff;
+  padding: 25px 0 20px;
 
-  color: var(--scanner-black);
+  flex: 1 1 auto;
+
+  display: grid;
+  place-items: center;
 }
 
-.result-shell.is-valid {
-  background: #ffffff;
-}
+.apple-result-card {
+  width: min(580px, 100%);
 
-.result-shell.is-denied {
-  background: #ffffff;
-}
+  max-height: calc(100svh - 128px);
 
-.result-card {
-  width: min(580px, calc(100% - 40px));
+  overflow: auto;
 
-  margin: 70px auto 45px;
-
-  padding: 42px;
+  padding: 34px;
 
   text-align: center;
 
-  border: 1px solid #e4e4e4;
-
+  border: 1px solid var(--border);
   border-radius: 18px;
 
   background: #ffffff;
 
   box-shadow:
-    0 20px 55px rgba(0, 0, 0, 0.06),
+    0 18px 45px rgba(0, 0, 0, 0.07),
     0 2px 8px rgba(0, 0, 0, 0.03);
 }
 
-.result-status-icon {
-  width: 76px;
+.apple-result-icon {
+  width: 64px;
+  height: 64px;
 
-  height: 76px;
-
-  margin: 0 auto 22px;
+  margin: 0 auto 17px;
 
   display: grid;
-
   place-items: center;
 
   border-radius: 50%;
 }
 
-.result-status-icon svg {
-  width: 31px;
-
-  height: 31px;
-
-  fill: none;
-
-  stroke: currentColor;
-
-  stroke-width: 2;
-
-  stroke-linecap: round;
-
-  stroke-linejoin: round;
+.apple-result-icon svg {
+  width: 27px;
+  height: 27px;
 }
 
-.result-status-icon.success {
-  border: 1px solid #cde878;
-
-  background: #f7ffe0;
-
-  color: #83a500;
+.apple-result-icon.success {
+  background: #f1ffd0;
+  color: #6f8f00;
 }
 
-.result-status-icon.warning {
-  border: 1px solid #f0d89a;
-
-  background: #fffaf0;
-
-  color: #b8861b;
+.apple-result-icon.danger {
+  background: #fff1f0;
+  color: var(--red);
 }
 
-.result-status-icon.danger {
-  border: 1px solid #ffcaca;
+.apple-result-eyebrow {
+  color: #86868b;
 
-  background: #fff3f3;
-
-  color: #d83a3a;
-}
-
-.result-kicker {
-  color: #8a8a8a;
-
-  font-size: 8px;
+  font-size: 9px;
+  line-height: 1;
 
   font-weight: 800;
 
-  letter-spacing: 0.18em;
-
-  text-transform: uppercase;
+  letter-spacing: 0.15em;
 }
 
-.result-card h1 {
-  margin: 10px 0 10px;
+.apple-result-card h1 {
+  margin: 11px 0 9px;
 
-  color: #080808;
+  color: var(--black);
 
-  font-size: clamp(38px, 6vw, 54px);
+  font-size: clamp(42px, 6vw, 60px);
+  line-height: 0.92;
 
-  font-weight: 650;
+  font-weight: 600;
 
-  line-height: 0.94;
-
-  letter-spacing: -0.065em;
+  letter-spacing: -0.07em;
 }
 
-.result-copy {
+.apple-result-message {
   max-width: 390px;
 
   margin: 0 auto;
 
-  color: #777777;
+  color: var(--muted);
 
-  font-size: 10px;
-
-  line-height: 1.65;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
-/* =========================================================
-   TICKET SUMMARY
-   ========================================================= */
+.apple-result-grid {
+  margin-top: 22px;
 
-.ticket-summary {
-  margin-top: 27px;
+  display: grid;
+
+  grid-template-columns: 1fr 1fr;
 
   overflow: hidden;
 
-  border: 1px solid #e6e6e6;
-
+  border: 1px solid #e5e5e7;
   border-radius: 11px;
 
   background: #fafafa;
@@ -1173,225 +751,380 @@
   text-align: left;
 }
 
-.ticket-id-row {
-  padding: 14px 16px;
+.apple-result-grid div {
+  min-height: 64px;
 
-  display: flex;
+  padding: 12px 14px;
 
-  align-items: center;
-
-  justify-content: space-between;
-
-  border-bottom: 1px solid #e6e6e6;
+  border-bottom: 1px solid #e5e5e7;
 }
 
-.ticket-id-row span {
-  color: #999999;
-
-  font-size: 7px;
-
-  font-weight: 800;
-
-  letter-spacing: 0.13em;
-
-  text-transform: uppercase;
+.apple-result-grid div:nth-child(odd) {
+  border-right: 1px solid #e5e5e7;
 }
 
-.ticket-id-row strong {
-  color: #86a600;
-
-  font-size: 11px;
-
-  font-weight: 800;
-
-  letter-spacing: 0.05em;
+.apple-result-grid div:nth-last-child(-n + 2) {
+  border-bottom: 0;
 }
 
-.summary-grid {
-  display: grid;
-
-  grid-template-columns: 1fr 1fr;
-}
-
-.summary-grid div {
-  min-height: 68px;
-
-  padding: 13px 16px;
-
-  border-bottom: 1px solid #e6e6e6;
-}
-
-.summary-grid div:nth-child(odd) {
-  border-right: 1px solid #e6e6e6;
-}
-
-.summary-grid span {
+.apple-result-grid span {
   display: block;
 
   margin-bottom: 6px;
 
-  color: #999999;
+  color: #86868b;
 
-  font-size: 7px;
+  font-size: 8px;
+  line-height: 1;
 
-  font-weight: 800;
+  font-weight: 700;
 
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
 
   text-transform: uppercase;
 }
 
-.summary-grid strong {
+.apple-result-grid strong {
   display: block;
 
-  color: #202020;
+  color: var(--black);
 
-  font-size: 10px;
+  font-size: 11px;
+  line-height: 1.35;
 
-  font-weight: 650;
-
-  line-height: 1.4;
+  font-weight: 600;
 }
 
-.scan-next-button {
-  margin-top: 17px;
+.apple-next-button {
+  margin-top: 14px;
+}
+
+/* =========================================================
+   FOOTER
+   ========================================================= */
+
+.apple-scanner-footer {
+  width: min(1200px, calc(100% - 48px));
+
+  min-height: 54px;
+
+  margin: 0 auto;
+
+  padding: 16px 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 20px;
+
+  border-top: 1px solid var(--border);
+
+  color: #86868b;
+
+  font-size: 11px;
+  line-height: 1;
+
+  flex: 0 0 auto;
+}
+
+.apple-scanner-footer > span:first-child {
+  color: var(--black);
+
+  font-weight: 600;
+
+  letter-spacing: -0.03em;
+}
+
+.apple-scanner-footer > span:first-child > span {
+  color: var(--muted);
+}
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (max-width: 760px) {
+  .apple-scanner-nav,
+  .apple-scanner-footer {
+    width: calc(100% - 32px);
+  }
+
+  .apple-scanner-main {
+    width: calc(100% - 32px);
+
+    padding-top: 18px;
+    padding-bottom: 12px;
+  }
+
+  .apple-scanner-heading h1 {
+    font-size: clamp(39px, 10vw, 58px);
+  }
+
+  .apple-scanner-heading p {
+    font-size: 12px;
+  }
+
+  .apple-camera-card {
+    margin-top: 17px;
+  }
+
+  .apple-camera-stage {
+    height: min(44vh, 340px);
+  }
+
+  .apple-scanner-note {
+    font-size: 7px;
+  }
+
+  .apple-result-main {
+    width: calc(100% - 32px);
+  }
+
+  .apple-result-card {
+    padding: 28px 20px;
+  }
 }
 
 /* =========================================================
    MOBILE
    ========================================================= */
 
-@media (max-width: 760px) {
-  .scanner-topbar {
+@media (max-width: 480px) {
+  .apple-scanner-nav {
     width: calc(100% - 28px);
 
-    height: 68px;
+    height: 58px;
+    min-height: 58px;
   }
 
-  .scanner-content {
+  .apple-scanner-logo {
+    font-size: 15px;
+  }
+
+  .apple-scanner-links {
+    gap: 17px;
+  }
+
+  .apple-scanner-links a {
+    font-size: 12px;
+  }
+
+  .apple-scanner-main {
     width: calc(100% - 28px);
 
-    padding-top: 55px;
+    padding-top: 13px;
   }
 
-  .scanner-intro {
-    margin-bottom: 28px;
+  .apple-scanner-eyebrow {
+    margin-bottom: 13px;
+
+    font-size: 8px;
   }
 
-  .scanner-intro h1 {
-    font-size: clamp(48px, 14vw, 68px);
+  .apple-scanner-heading h1 {
+    font-size: 40px;
   }
 
-  .scanner-intro p {
-    max-width: 350px;
+  .apple-scanner-heading p {
+    margin-top: 9px;
 
-    font-size: 11px;
+    font-size: 10px;
   }
 
-  .camera-card {
-    padding: 7px;
+  .apple-camera-card {
+    margin-top: 13px;
 
-    border-radius: 15px;
-  }
-
-  .camera-stage {
-    min-height: 390px;
-
-    border-radius: 9px;
-  }
-
-  .scan-frame {
-    width: 240px;
-
-    height: 240px;
-  }
-
-  .scanner-footer {
-    width: calc(100% - 28px);
-
-    flex-direction: column;
-
-    gap: 9px;
-
-    text-align: center;
-  }
-
-  .security-strip {
-    align-items: flex-start;
-
-    flex-direction: column;
-  }
-
-  .result-card {
-    width: calc(100% - 28px);
-
-    margin-top: 38px;
-
-    padding: 32px 18px 22px;
+    padding: 6px;
 
     border-radius: 14px;
   }
-}
 
-/* =========================================================
-   SMALL MOBILE
-   ========================================================= */
-
-@media (max-width: 480px) {
-  .brand-lockup small {
-    display: none;
-  }
-
-  .gate-pill {
-    padding: 0 9px;
+  .apple-camera-topline {
+    height: 27px;
 
     font-size: 7px;
   }
 
-  .scanner-content {
-    padding-top: 45px;
+  .apple-camera-stage {
+    height: min(43vh, 285px);
+
+    min-height: 235px;
+
+    border-radius: 9px;
   }
 
-  .scanner-intro h1 {
-    font-size: 47px;
+  .apple-scan-frame {
+    width: 190px;
+    height: 190px;
   }
 
-  .scanner-intro p {
+  .scan-corner {
+    width: 25px;
+    height: 25px;
+  }
+
+  @keyframes apple-scan-line {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+
+    50% {
+      transform: translateY(178px);
+    }
+  }
+
+  .apple-camera-placeholder strong {
+    font-size: 12px;
+  }
+
+  .apple-camera-placeholder span {
+    font-size: 8px;
+  }
+
+  .apple-camera-icon {
+    width: 42px;
+    height: 42px;
+
+    margin-bottom: 9px;
+
+    border-radius: 12px;
+  }
+
+  .apple-start-button,
+  .apple-next-button {
+    min-height: 42px;
+
+    margin-top: 6px;
+
+    font-size: 11px;
+  }
+
+  .apple-scanning-note {
+    min-height: 25px;
+
+    font-size: 7px;
+  }
+
+  .apple-scanner-note {
+    margin-top: 8px;
+
+    font-size: 6.5px;
+  }
+
+  .apple-scanner-footer {
+    width: calc(100% - 28px);
+
+    min-height: 45px;
+
+    padding: 12px 0;
+
+    font-size: 9px;
+  }
+
+  .apple-result-main {
+    width: calc(100% - 28px);
+
+    padding: 14px 0;
+  }
+
+  .apple-result-card {
+    max-height: calc(100svh - 100px);
+
+    padding: 24px 15px 16px;
+
+    border-radius: 14px;
+  }
+
+  .apple-result-icon {
+    width: 54px;
+    height: 54px;
+
+    margin-bottom: 13px;
+  }
+
+  .apple-result-card h1 {
+    font-size: 42px;
+  }
+
+  .apple-result-message {
     font-size: 10px;
   }
 
-  .camera-topline {
-    min-height: 35px;
+  .apple-result-grid {
+    margin-top: 16px;
   }
 
-  .camera-stage {
-    min-height: 355px;
+  .apple-result-grid div {
+    min-height: 57px;
+
+    padding: 10px;
   }
 
-  .scan-frame {
-    width: 215px;
-
-    height: 215px;
+  .apple-result-grid span {
+    font-size: 7px;
   }
 
-  .corner {
-    width: 29px;
+  .apple-result-grid strong {
+    font-size: 9px;
+  }
+}
 
-    height: 29px;
+/* =========================================================
+   SHORT DESKTOP HEIGHT
+   Prevent scrolling on smaller MacBook/browser heights.
+   ========================================================= */
+
+@media (max-height: 760px) and (min-width: 761px) {
+  .apple-scanner-main {
+    padding-top: 12px;
+    padding-bottom: 8px;
   }
 
-  .summary-grid div {
-    min-height: 62px;
-
-    padding: 11px;
+  .apple-scanner-eyebrow {
+    margin-bottom: 11px;
   }
 
-  .scanner-error {
-    align-items: flex-start;
+  .apple-scanner-heading h1 {
+    font-size: 48px;
   }
 
-  .scanner-error button {
-    display: none;
+  .apple-scanner-heading p {
+    margin-top: 8px;
+
+    font-size: 11px;
+  }
+
+  .apple-camera-card {
+    width: 500px;
+
+    margin-top: 12px;
+  }
+
+  .apple-camera-stage {
+    height: 255px;
+    min-height: 255px;
+  }
+
+  .apple-scan-frame {
+    width: 185px;
+    height: 185px;
+  }
+
+  @keyframes apple-scan-line {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+
+    50% {
+      transform: translateY(173px);
+    }
+  }
+
+  .apple-scanner-note {
+    margin-top: 6px;
   }
 }
 
@@ -1400,14 +1133,12 @@
    ========================================================= */
 
 @media (prefers-reduced-motion: reduce) {
-  .scan-line,
-  .spinner {
+  .apple-scan-line {
     animation: none;
   }
 
-  .start-button,
-  .scan-next-button,
-  .brand-mark {
+  .apple-start-button,
+  .apple-next-button {
     transition: none;
   }
 }

@@ -1,97 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 
-type TicketType = "single" | "couple";
+import styles from "./tickets.module.css";
 
-function TicketIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M5 7.5A2.5 2.5 0 0 1 7.5 5h9A2.5 2.5 0 0 1 19 7.5V9a2 2 0 0 0 0 4v1.5a2.5 2.5 0 0 1-2.5 2.5h-9A2.5 2.5 0 0 1 5 14.5V13a2 2 0 0 0 0-4V7.5Z"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinejoin="round"
-      />
+type TicketStats = {
+  total: number;
+  single: number;
+  couple: number;
+  unused: number;
+  used: number;
+};
 
-      <path
-        d="M12 7.5v9"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeDasharray="1.5 2"
-      />
-    </svg>
-  );
-}
-
-function ScanIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M4 8V6.5A2.5 2.5 0 0 1 6.5 4H8"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinecap="round"
-      />
-
-      <path
-        d="M16 4h1.5A2.5 2.5 0 0 1 20 6.5V8"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinecap="round"
-      />
-
-      <path
-        d="M20 16v1.5a2.5 2.5 0 0 1-2.5 2.5H16"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinecap="round"
-      />
-
-      <path
-        d="M8 20H6.5A2.5 2.5 0 0 1 4 17.5V16"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinecap="round"
-      />
-
-      <path
-        d="M7 12h10"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function DownloadIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M12 4v11"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
-
-      <path
-        d="m7.5 11.5 4.5 4.5 4.5-4.5"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-
-      <path
-        d="M5 20h14"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
+type StatsResponse = {
+  success: boolean;
+  message?: string;
+  tickets?: TicketStats;
+  updatedAt?: string;
+};
 
 function ArrowIcon() {
   return (
@@ -99,14 +27,14 @@ function ArrowIcon() {
       <path
         d="M5 12h13"
         stroke="currentColor"
-        strokeWidth="1.7"
+        strokeWidth="1.6"
         strokeLinecap="round"
       />
 
       <path
         d="m13 6 6 6-6 6"
         stroke="currentColor"
-        strokeWidth="1.7"
+        strokeWidth="1.6"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -114,281 +42,372 @@ function ArrowIcon() {
   );
 }
 
-export default function TicketManagementPage() {
-  const [singleCount, setSingleCount] = useState(500);
-  const [coupleCount, setCoupleCount] = useState(250);
+function RefreshIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M20 11a8 8 0 0 0-14.9-3M4 5v4h4"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
 
-  const [loading, setLoading] = useState<TicketType | null>(null);
+      <path
+        d="M4 13a8 8 0 0 0 14.9 3M20 19v-4h-4"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export default function TicketsPage() {
+  const [stats, setStats] = useState<TicketStats>({
+    total: 0,
+    single: 0,
+    couple: 0,
+    unused: 0,
+    used: 0,
+  });
+
+  const [loading, setLoading] = useState(true);
 
   const [error, setError] = useState("");
 
-  async function generatePDF(type: TicketType) {
-    setError("");
-    setLoading(type);
+  const [lastUpdated, setLastUpdated] = useState("");
 
+  const [realtimeConnected, setRealtimeConnected] = useState(false);
+
+  const loadStats = useCallback(async () => {
     try {
-      const count = type === "single" ? singleCount : coupleCount;
+      const response = await fetch("/api/tickets/stats", {
+        method: "GET",
+        cache: "no-store",
+      });
 
-      if (!Number.isInteger(count) || count < 1 || count > 5000) {
-        throw new Error("Enter a quantity between 1 and 5000.");
+      const data: StatsResponse = await response.json();
+
+      if (!response.ok || !data.success || !data.tickets) {
+        throw new Error(data.message || "Unable to load ticket statistics.");
       }
 
-      const response = await fetch(
-        `/api/tickets/pdf?type=${type}&count=${count}`,
-        {
-          method: "GET",
-          cache: "no-store",
-        },
-      );
+      setStats(data.tickets);
 
-      if (!response.ok) {
-        let message = "Unable to generate the PDF.";
+      setLastUpdated(data.updatedAt || new Date().toISOString());
 
-        try {
-          const data = await response.json();
-
-          if (data?.message) {
-            message = data.message;
-          }
-        } catch {
-          // Response wasn't JSON.
-        }
-
-        throw new Error(message);
-      }
-
-      const blob = await response.blob();
-
-      const url = window.URL.createObjectURL(blob);
-
-      const anchor = document.createElement("a");
-
-      anchor.href = url;
-
-      anchor.download = `${type}-tickets-${count}.pdf`;
-
-      document.body.appendChild(anchor);
-
-      anchor.click();
-
-      anchor.remove();
-
-      window.URL.revokeObjectURL(url);
-    } catch (requestError) {
-      console.error("Failed to generate PDF:", requestError);
+      setError("");
+    } catch (error) {
+      console.error("[TICKETS] Failed to load stats:", error);
 
       setError(
-        requestError instanceof Error
-          ? requestError.message
-          : "Unable to generate PDF.",
+        error instanceof Error
+          ? error.message
+          : "Unable to load ticket statistics.",
       );
     } finally {
-      setLoading(null);
+      setLoading(false);
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    const initialLoad = window.setTimeout(() => {
+      loadStats();
+    }, 0);
+
+    return () => {
+      window.clearTimeout(initialLoad);
+    };
+  }, [loadStats]);
+
+  /*
+   * Supabase Realtime.
+   *
+   * We intentionally use the browser Supabase client
+   * here so the page can receive ticket UPDATE events.
+   */
+  useEffect(() => {
+    let channel: RealtimeChannel | null = null;
+
+    let cancelled = false;
+
+    const connectRealtime = async () => {
+      try {
+        const { supabase } = await import("@/lib/supabase");
+
+        if (cancelled) {
+          return;
+        }
+
+        channel = supabase
+          .channel("tickets-live-dashboard")
+          .on(
+            "postgres_changes",
+            {
+              event: "*",
+              schema: "public",
+              table: "tickets",
+            },
+            () => {
+              loadStats();
+            },
+          )
+          .subscribe((status) => {
+            if (status === "SUBSCRIBED") {
+              setRealtimeConnected(true);
+            }
+
+            if (
+              status === "CHANNEL_ERROR" ||
+              status === "TIMED_OUT" ||
+              status === "CLOSED"
+            ) {
+              setRealtimeConnected(false);
+            }
+          });
+      } catch (error) {
+        console.error("[TICKETS] Realtime connection failed:", error);
+
+        setRealtimeConnected(false);
+      }
+    };
+
+    connectRealtime();
+
+    return () => {
+      cancelled = true;
+
+      if (channel) {
+        import("@/lib/supabase")
+          .then(({ supabase }) => {
+            supabase.removeChannel(channel!);
+          })
+          .catch(() => {});
+      }
+    };
+  }, [loadStats]);
+
+  /*
+   * Fallback refresh.
+   *
+   * If Supabase Realtime is temporarily unavailable,
+   * the dashboard still stays current.
+   */
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      loadStats();
+    }, 10000);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [loadStats]);
+
+  const utilization =
+    stats.total > 0 ? Math.round((stats.used / stats.total) * 100) : 0;
+
+  const availablePercentage =
+    stats.total > 0 ? Math.round((stats.unused / stats.total) * 100) : 0;
 
   return (
-    <main className="ticket-admin-page">
-      <header className="ticket-admin-header">
-        <div className="ticket-brand">
-          <div className="ticket-brand-mark">
-            <TicketIcon />
-          </div>
+    <main className={styles.page}>
+      {/* HEADER */}
 
-          <div>
-            <strong>
-              ENTRY<span>PASS</span>
-            </strong>
+      <header className={styles.header}>
+        <Link href="/" className={styles.logo} aria-label="EntryPass home">
+          ENTRY<span>PASS</span>
+        </Link>
 
-            <small>TICKET MANAGEMENT</small>
-          </div>
-        </div>
+        <nav className={styles.nav} aria-label="Main navigation">
+          <Link href="/admin/scanner">Scanner</Link>
 
-        <div className="ticket-header-status">
-          <span>
-            <i />
-            SYSTEM ONLINE
-          </span>
-
-          <span>GATE 01</span>
-        </div>
+          <Link href="/admin/tickets" className={styles.activeNav}>
+            Tickets
+          </Link>
+        </nav>
       </header>
 
-      <section className="ticket-admin-main">
-        <div className="ticket-admin-heading">
-          <div>
-            <span>TICKET CENTER</span>
+      {/* MAIN */}
 
-            <h1>Generate Tickets</h1>
+      <section className={styles.main}>
+        <div className={styles.eyebrow}>TICKET MANAGEMENT</div>
 
-            <p>
-              Create QR-coded entry passes ready for printing and event
-              validation.
-            </p>
+        <h1 className={styles.title}>Tickets, at a glance.</h1>
+
+        <p className={styles.subtitle}>
+          Monitor your event inventory and entry status in real time.
+        </p>
+
+        {/* TOTAL */}
+
+        <section className={styles.totalSection}>
+          <span className={styles.totalLabel}>TOTAL TICKETS</span>
+
+          <div className={styles.totalNumber}>
+            {loading ? (
+              <span className={styles.loadingNumber}>—</span>
+            ) : (
+              stats.total.toLocaleString("en-IN")
+            )}
           </div>
 
-          <a href="/admin/scanner" className="ticket-scan-link">
-            <ScanIcon />
-            Open Scanner
-            <ArrowIcon />
-          </a>
-        </div>
+          <div className={styles.totalMeta}>
+            <span>{stats.single.toLocaleString("en-IN")} Single</span>
 
-        {error && (
-          <div className="ticket-error">
-            <div className="ticket-error-icon">!</div>
+            <span>{stats.couple.toLocaleString("en-IN")} Couple</span>
+          </div>
+        </section>
 
+        {/* STATS */}
+
+        <section className={styles.statsGrid}>
+          <article className={styles.stat}>
+            <span>SINGLE ENTRY</span>
+
+            <strong>
+              {loading ? "—" : stats.single.toLocaleString("en-IN")}
+            </strong>
+
+            <small>Individual tickets</small>
+          </article>
+
+          <article className={styles.stat}>
+            <span>COUPLE ENTRY</span>
+
+            <strong>
+              {loading ? "—" : stats.couple.toLocaleString("en-IN")}
+            </strong>
+
+            <small>Couple tickets</small>
+          </article>
+
+          <article className={styles.stat}>
+            <span>AVAILABLE</span>
+
+            <strong>
+              {loading ? "—" : stats.unused.toLocaleString("en-IN")}
+            </strong>
+
+            <small>{availablePercentage}% of inventory</small>
+          </article>
+
+          <article className={styles.stat}>
+            <span>SCANNED</span>
+
+            <strong>
+              {loading ? "—" : stats.used.toLocaleString("en-IN")}
+            </strong>
+
+            <small>{utilization}% entry completed</small>
+          </article>
+        </section>
+
+        {/* ENTRY PROGRESS */}
+
+        <section className={styles.progressSection}>
+          <div className={styles.progressHeader}>
             <div>
-              <strong>Generation failed</strong>
+              <span>EVENT ENTRY</span>
 
-              <p>{error}</p>
+              <h2>{stats.used.toLocaleString("en-IN")} tickets scanned</h2>
             </div>
 
-            <button type="button" onClick={() => setError("")}>
-              Dismiss
-            </button>
+            <strong>{utilization}%</strong>
+          </div>
+
+          <div className={styles.progressTrack}>
+            <div
+              className={styles.progressFill}
+              style={{
+                width: `${utilization}%`,
+              }}
+            />
+          </div>
+        </section>
+
+        {/* LIVE STATUS */}
+
+        <section className={styles.liveSection}>
+          <div className={styles.liveLeft}>
+            <div
+              className={`${styles.liveDot} ${
+                realtimeConnected ? styles.connected : styles.disconnected
+              }`}
+            />
+
+            <div>
+              <strong>
+                {realtimeConnected
+                  ? "Live updates enabled"
+                  : "Connecting to live updates"}
+              </strong>
+
+              <span>
+                {realtimeConnected
+                  ? "Changes appear automatically when a ticket is scanned."
+                  : "Dashboard is using automatic refresh as fallback."}
+              </span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            className={styles.refreshButton}
+            onClick={loadStats}
+            aria-label="Refresh ticket statistics"
+          >
+            <RefreshIcon />
+          </button>
+        </section>
+
+        {/* ERROR */}
+
+        {error && (
+          <div className={styles.error}>
+            <strong>Unable to load ticket data</strong>
+
+            <span>{error}</span>
           </div>
         )}
 
-        <div className="ticket-generator-grid">
-          <section className="ticket-generator-card featured">
-            <div className="generator-card-header">
-              <div className="generator-icon">
-                <TicketIcon />
-              </div>
+        {/* SCANNER CTA */}
 
-              <span className="generator-badge">STANDARD</span>
-            </div>
-
-            <div className="generator-copy">
-              <span>ENTRY TYPE</span>
-
-              <h2>Single Entry</h2>
-
-              <p>One QR ticket for one attendee.</p>
-            </div>
-
-            <div className="generator-form">
-              <label htmlFor="single-count">NUMBER OF TICKETS</label>
-
-              <div className="count-input">
-                <input
-                  id="single-count"
-                  type="number"
-                  min={1}
-                  max={5000}
-                  value={singleCount}
-                  onChange={(event) =>
-                    setSingleCount(Number(event.target.value))
-                  }
-                />
-
-                <span>TICKETS</span>
-              </div>
-
-              <button
-                type="button"
-                disabled={loading !== null}
-                onClick={() => generatePDF("single")}
-                className="generate-button"
-              >
-                {loading === "single" ? (
-                  <>
-                    <span className="button-spinner" />
-                    Preparing PDF...
-                  </>
-                ) : (
-                  <>
-                    <DownloadIcon />
-                    Generate Single PDF
-                  </>
-                )}
-              </button>
-            </div>
-          </section>
-
-          <section className="ticket-generator-card">
-            <div className="generator-card-header">
-              <div className="generator-icon">
-                <TicketIcon />
-              </div>
-
-              <span className="generator-badge">TWO PERSON</span>
-            </div>
-
-            <div className="generator-copy">
-              <span>ENTRY TYPE</span>
-
-              <h2>Couple Entry</h2>
-
-              <p>One QR ticket designed for two-person entry.</p>
-            </div>
-
-            <div className="generator-form">
-              <label htmlFor="couple-count">NUMBER OF TICKETS</label>
-
-              <div className="count-input">
-                <input
-                  id="couple-count"
-                  type="number"
-                  min={1}
-                  max={5000}
-                  value={coupleCount}
-                  onChange={(event) =>
-                    setCoupleCount(Number(event.target.value))
-                  }
-                />
-
-                <span>TICKETS</span>
-              </div>
-
-              <button
-                type="button"
-                disabled={loading !== null}
-                onClick={() => generatePDF("couple")}
-                className="generate-button secondary"
-              >
-                {loading === "couple" ? (
-                  <>
-                    <span className="button-spinner" />
-                    Preparing PDF...
-                  </>
-                ) : (
-                  <>
-                    <DownloadIcon />
-                    Generate Couple PDF
-                  </>
-                )}
-              </button>
-            </div>
-          </section>
-        </div>
-
-        <section className="ticket-info-panel">
-          <div className="info-icon">
-            <TicketIcon />
-          </div>
-
+        <Link href="/admin/scanner" className={styles.scannerCta}>
           <div>
-            <strong>How ticket generation works</strong>
+            <span>EVENT ACCESS</span>
 
-            <p>
-              Existing ticket records are reused automatically. Only the missing
-              tickets are created, so repeatedly generating a PDF will not
-              create duplicates.
-            </p>
+            <strong>Scan a ticket</strong>
+
+            <small>Verify attendee entry at the gate.</small>
           </div>
-        </section>
+
+          <ArrowIcon />
+        </Link>
+
+        {/* LAST UPDATED */}
+
+        {lastUpdated && (
+          <div className={styles.lastUpdated}>
+            LAST UPDATED{" "}
+            {new Date(lastUpdated).toLocaleTimeString("en-IN", {
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit",
+            })}
+          </div>
+        )}
       </section>
 
-      <footer className="ticket-admin-footer">
+      {/* FOOTER */}
+
+      <footer className={styles.footer}>
         <span>
           ENTRY<span>PASS</span>
         </span>
 
-        <span>Secure ticket operations</span>
-
-        <span>2026</span>
+        <span>Made by, Anirudh Sonawane</span>
       </footer>
     </main>
   );

@@ -1,17 +1,23 @@
 "use client";
 
 import "./scanner.css";
+
 import { useCallback, useEffect, useRef, useState } from "react";
+
 import Link from "next/link";
+
 import { Html5Qrcode } from "html5-qrcode";
+
+/* =========================================================
+   TYPES
+   ========================================================= */
 
 type TicketResult = {
   ticketId: string;
   ticketType: string;
   date: string | null;
   venue: string;
-  checkInTime: string | null;
-  gate: string | null;
+  scannedAt: string | null;
 };
 
 type ScanResponse = {
@@ -22,24 +28,34 @@ type ScanResponse = {
   ticket?: TicketResult;
 };
 
-type QRPayload = {
-  ticketCode?: unknown;
-  token?: unknown;
-};
+/* =========================================================
+   CONSTANTS
+   ========================================================= */
 
 const READER_ID = "qr-reader";
-const GATE = "Gate 1";
+
+/* =========================================================
+   HELPERS
+   ========================================================= */
 
 function isValidString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
+/* =========================================================
+   FORMAT DATE
+   ========================================================= */
+
 function formatDate(value: string | null | undefined): string {
-  if (!value) return "—";
+  if (!value) {
+    return "—";
+  }
 
   const date = new Date(value);
 
-  if (Number.isNaN(date.getTime())) return "—";
+  if (Number.isNaN(date.getTime())) {
+    return "—";
+  }
 
   return new Intl.DateTimeFormat("en-IN", {
     day: "2-digit",
@@ -49,12 +65,20 @@ function formatDate(value: string | null | undefined): string {
   }).format(date);
 }
 
+/* =========================================================
+   FORMAT DATE + TIME
+   ========================================================= */
+
 function formatDateTime(value: string | null | undefined): string {
-  if (!value) return "—";
+  if (!value) {
+    return "—";
+  }
 
   const date = new Date(value);
 
-  if (Number.isNaN(date.getTime())) return "—";
+  if (Number.isNaN(date.getTime())) {
+    return "—";
+  }
 
   return new Intl.DateTimeFormat("en-IN", {
     day: "2-digit",
@@ -68,6 +92,10 @@ function formatDateTime(value: string | null | undefined): string {
   }).format(date);
 }
 
+/* =========================================================
+   CAMERA ICON
+   ========================================================= */
+
 function CameraIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -77,10 +105,15 @@ function CameraIcon() {
         strokeWidth="1.5"
         strokeLinejoin="round"
       />
+
       <circle cx="12" cy="13" r="3.2" stroke="currentColor" strokeWidth="1.5" />
     </svg>
   );
 }
+
+/* =========================================================
+   ARROW ICON
+   ========================================================= */
 
 function ArrowIcon() {
   return (
@@ -96,6 +129,10 @@ function ArrowIcon() {
   );
 }
 
+/* =========================================================
+   CHECK ICON
+   ========================================================= */
+
 function CheckIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -110,6 +147,10 @@ function CheckIcon() {
   );
 }
 
+/* =========================================================
+   CLOSE ICON
+   ========================================================= */
+
 function CloseIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -123,62 +164,79 @@ function CloseIcon() {
   );
 }
 
+/* =========================================================
+   QR SCANNER
+   ========================================================= */
+
 export default function QRScanner() {
   const scannerRef = useRef<Html5Qrcode | null>(null);
+
   const processingRef = useRef(false);
+
   const mountedRef = useRef(false);
 
   const [result, setResult] = useState<ScanResponse | null>(null);
+
   const [error, setError] = useState("");
+
   const [isScanning, setIsScanning] = useState(false);
+
+  /* =======================================================
+     STOP SCANNER
+     ======================================================= */
 
   const stopScanner = useCallback(async () => {
     const scanner = scannerRef.current;
 
-    if (!scanner) return;
+    if (!scanner) {
+      setIsScanning(false);
+
+      return;
+    }
 
     try {
       if (scanner.isScanning) {
         await scanner.stop();
       }
     } catch {
-      // Scanner may already be stopped.
+      /*
+       * Scanner may already be stopped.
+       */
     }
 
     setIsScanning(false);
   }, []);
 
+  /* =======================================================
+     HANDLE QR CODE
+     ======================================================= */
+
   const handleQRCode = useCallback(
     async (decodedText: string) => {
-      if (processingRef.current) return;
-
-      processingRef.current = true;
-
-      await stopScanner();
-
-      let qrData: QRPayload;
-
-      try {
-        qrData = JSON.parse(decodedText) as QRPayload;
-      } catch {
-        setResult({
-          success: false,
-          valid: false,
-          status: "INVALID",
-          message: "This QR code is not a valid EntryPass ticket.",
-        });
-
-        processingRef.current = false;
+      if (processingRef.current) {
         return;
       }
 
-      const ticketCode = isValidString(qrData.ticketCode)
-        ? qrData.ticketCode.trim()
-        : "";
+      processingRef.current = true;
 
-      const token = isValidString(qrData.token) ? qrData.token.trim() : "";
+      /*
+       * Stop camera immediately after
+       * detecting a QR code.
+       */
 
-      if (!ticketCode || !token) {
+      await stopScanner();
+
+      /*
+       * IMPORTANT:
+       *
+       * The QR contains ONLY qr_token.
+       *
+       * Do NOT JSON.parse(decodedText).
+       */
+
+      const qrToken = decodedText.trim();
+
+      if (!isValidString(qrToken)) {
         setResult({
           success: false,
           valid: false,
@@ -187,24 +245,25 @@ export default function QRScanner() {
         });
 
         processingRef.current = false;
+
         return;
       }
 
       try {
         const response = await fetch("/api/tickets/scan", {
           method: "POST",
+
           headers: {
             "Content-Type": "application/json",
           },
+
           body: JSON.stringify({
-            ticketCode,
-            token,
-            gate: GATE,
-            scannedBy: "ADMIN_SCANNER",
+            qrToken,
           }),
         });
 
         const data = (await response.json()) as ScanResponse;
+
         setResult(data);
       } catch (scanError) {
         console.error("Ticket scan error:", scanError);
@@ -222,25 +281,48 @@ export default function QRScanner() {
     [stopScanner],
   );
 
+  /* =======================================================
+     START SCANNER
+     ======================================================= */
+
   const startScanner = useCallback(async () => {
-    if (isScanning || processingRef.current) return;
+    if (isScanning || processingRef.current) {
+      return;
+    }
 
     setError("");
 
     try {
       const scanner = new Html5Qrcode(READER_ID);
+
       scannerRef.current = scanner;
 
       await scanner.start(
-        { facingMode: "environment" },
+        {
+          facingMode: "environment",
+        },
+
         {
           fps: 10,
-          qrbox: { width: 280, height: 280 },
+
+          qrbox: {
+            width: 220,
+            height: 220,
+          },
+
+          aspectRatio: 1,
         },
+
         (decodedText) => {
           void handleQRCode(decodedText);
         },
-        () => {},
+
+        () => {
+          /*
+           * Ignore normal QR
+           * decode misses.
+           */
+        },
       );
 
       if (mountedRef.current) {
@@ -248,12 +330,18 @@ export default function QRScanner() {
       }
     } catch (scannerError) {
       console.error("Camera error:", scannerError);
+
       setError(
         "Camera access is unavailable. Allow camera permission and try again.",
       );
+
       setIsScanning(false);
     }
   }, [handleQRCode, isScanning]);
+
+  /* =======================================================
+     CLEANUP
+     ======================================================= */
 
   useEffect(() => {
     mountedRef.current = true;
@@ -269,11 +357,17 @@ export default function QRScanner() {
     };
   }, []);
 
+  /* =======================================================
+     SCAN AGAIN
+     ======================================================= */
+
   const scanAgain = async () => {
     await stopScanner();
 
     processingRef.current = false;
+
     setResult(null);
+
     setError("");
 
     window.setTimeout(() => {
@@ -283,11 +377,24 @@ export default function QRScanner() {
     }, 100);
   };
 
+  /* =======================================================
+     RESULT STATES
+     ======================================================= */
+
   const isValid = result?.success === true && result?.valid === true;
-  const isUsed = result?.status === "USED";
+
+  const isUsed = result?.status === "USED" && !isValid;
+
+  /* =======================================================
+     UI
+     ======================================================= */
 
   return (
     <main className="apple-scanner-page">
+      {/* ===================================================
+          HEADER
+      =================================================== */}
+
       <header className="apple-scanner-nav">
         <Link
           href="/"
@@ -301,9 +408,12 @@ export default function QRScanner() {
           <Link href="/admin/scanner" className="active">
             Scanner
           </Link>
-          <Link href="/admin/tickets">Tickets</Link>
         </nav>
       </header>
+
+      {/* ===================================================
+          SCANNER
+      =================================================== */}
 
       {!result ? (
         <section className="apple-scanner-main">
@@ -328,6 +438,7 @@ export default function QRScanner() {
 
               <span className={isScanning ? "camera-online" : ""}>
                 <i />
+
                 {isScanning ? "Camera active" : "Camera ready"}
               </span>
             </div>
@@ -340,6 +451,7 @@ export default function QRScanner() {
                 <span className="scan-corner tr" />
                 <span className="scan-corner bl" />
                 <span className="scan-corner br" />
+
                 {isScanning && <span className="apple-scan-line" />}
               </div>
 
@@ -348,7 +460,9 @@ export default function QRScanner() {
                   <div className="apple-camera-icon">
                     <CameraIcon />
                   </div>
+
                   <strong>Camera is ready</strong>
+
                   <span>Start the scanner to activate your camera</span>
                 </div>
               )}
@@ -358,7 +472,9 @@ export default function QRScanner() {
                   <div className="apple-camera-icon error">
                     <CloseIcon />
                   </div>
+
                   <strong>Camera unavailable</strong>
+
                   <span>{error}</span>
                 </div>
               )}
@@ -397,10 +513,15 @@ export default function QRScanner() {
 
           <div className="apple-scanner-note">
             <span>SECURE ENTRY</span>
+
             <span>Each ticket can only be accepted once.</span>
           </div>
         </section>
       ) : (
+        /* =================================================
+           RESULT
+        ================================================= */
+
         <section className="apple-result-main">
           <div className={`apple-result-card ${isValid ? "valid" : "invalid"}`}>
             <div
@@ -429,35 +550,37 @@ export default function QRScanner() {
               <div className="apple-result-grid">
                 <div>
                   <span>Ticket ID</span>
+
                   <strong>{result.ticket.ticketId}</strong>
                 </div>
 
                 <div>
                   <span>Ticket type</span>
+
                   <strong>{result.ticket.ticketType}</strong>
                 </div>
 
                 <div>
                   <span>Date</span>
+
                   <strong>{formatDate(result.ticket.date)}</strong>
                 </div>
 
                 <div>
                   <span>Venue</span>
+
                   <strong>{result.ticket.venue}</strong>
                 </div>
 
-                {isUsed && result.ticket.checkInTime && (
-                  <div>
-                    <span>Checked in</span>
-                    <strong>{formatDateTime(result.ticket.checkInTime)}</strong>
-                  </div>
-                )}
+                {/* =========================================
+                    SCANNED AT
+                ========================================= */}
 
-                {isUsed && result.ticket.gate && (
+                {result.ticket.scannedAt && (
                   <div>
-                    <span>Gate</span>
-                    <strong>{result.ticket.gate}</strong>
+                    <span>Scanned at</span>
+
+                    <strong>{formatDateTime(result.ticket.scannedAt)}</strong>
                   </div>
                 )}
               </div>
@@ -475,10 +598,15 @@ export default function QRScanner() {
         </section>
       )}
 
+      {/* ===================================================
+          FOOTER
+      =================================================== */}
+
       <footer className="apple-scanner-footer">
         <span>
           ENTRY<span>PASS</span>
         </span>
+
         <span>Made by, Anirudh Sonawane</span>
       </footer>
     </main>

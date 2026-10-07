@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { randomUUID } from "crypto";
 import QRCode from "qrcode";
-
 import { PDFDocument, PDFPage, PDFFont, rgb, StandardFonts } from "pdf-lib";
+import { randomUUID } from "crypto";
 
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
@@ -13,304 +12,456 @@ type TicketType = "single" | "couple";
 type TicketRow = {
   id: string;
   ticket_code: string;
-  ticket_type: string;
   qr_token: string;
   status: string;
-  created_at: string;
+  created_at?: string;
+  ticket_type: TicketType;
 };
 
-type GenerateResult = {
-  tickets: TicketRow[];
-  created: number;
-  reused: number;
-};
+/* =========================================================
+   CONSTANTS
+   ========================================================= */
 
-function normalizeTicketType(value: string | null): TicketType {
-  return value === "couple" ? "couple" : "single";
-}
+const TABLES = {
+  single: "single_tickets",
+  couple: "couple_tickets",
+} as const;
+
+const VENUE_NAME = "GURUKUL OLYMPIAD SCHOOL";
+const VENUE_ADDRESS = "BESIDES SHAHANOORWADI, BEED";
+const EVENT_NAME = "NAV DURGA";
+const EVENT_SUBTITLE = "RAAS DANDIYA 2026";
+
+/* =========================================================
+   HELPERS
+   ========================================================= */
 
 function getPrefix(type: TicketType) {
   return type === "couple" ? "CPL" : "SGL";
+}
+
+function getTicketLabel(type: TicketType) {
+  return type === "couple" ? "Couple Entry" : "Single Entry";
 }
 
 function getTicketCode(prefix: string, number: number) {
   return `${prefix}-${String(number).padStart(4, "0")}`;
 }
 
-/**
- * Gets the highest existing ticket number for the requested type.
- *
- * Example:
- * SGL-0001
- * SGL-0002
- * SGL-0150
- *
- * returns 150.
- */
-function extractTicketNumber(ticketCode: string, prefix: string): number {
-  const match = ticketCode.match(new RegExp(`^${prefix}-(\\d+)$`));
-
-  if (!match) {
+function parseCount(value: string | null) {
+  if (!value) {
     return 0;
   }
 
-  return Number(match[1]);
+  const count = Number(value);
+
+  if (!Number.isInteger(count) || count < 0) {
+    return 0;
+  }
+
+  return Math.min(count, 5000);
 }
 
-/**
- * Fetch existing tickets for this ticket type.
- */
-async function getExistingTickets(type: TicketType): Promise<TicketRow[]> {
-  const ticketType = type.toUpperCase();
+/* =========================================================
+   GET EXISTING TICKETS
+   ========================================================= */
+
+async function getExistingTickets(type: TicketType) {
+  const table = TABLES[type];
+  const prefix = getPrefix(type);
 
   const { data, error } = await supabaseAdmin
-    .from("tickets")
-    .select("id, ticket_code, ticket_type, qr_token, status, created_at")
-    .eq("ticket_type", ticketType)
+    .from(table)
+    .select("id, ticket_code, qr_token, status, created_at")
+    .like("ticket_code", `${prefix}-%`)
     .order("ticket_code", {
       ascending: true,
     });
 
   if (error) {
-    throw new Error(`Unable to fetch existing tickets: ${error.message}`);
+    throw new Error(
+      `Unable to read existing ${type} tickets: ${error.message}`,
+    );
   }
 
-  return (data ?? []) as TicketRow[];
+  return (data ?? []).map((ticket) => ({
+    ...ticket,
+    ticket_type: type,
+  })) as TicketRow[];
 }
 
-/**
- * Creates enough tickets to satisfy requestedCount.
- *
- * IMPORTANT:
- * Existing tickets are reused.
- *
- * Example:
- *
- * Existing = 100
- * Requested = 500
- *
- * Creates only 400 new tickets.
- *
- * Next request:
- *
- * Existing = 500
- * Requested = 500
- *
- * Creates 0 new tickets.
- */
-async function ensureTickets(
-  type: TicketType,
-  requestedCount: number,
-): Promise<GenerateResult> {
-  const prefix = getPrefix(type);
+/* =========================================================
+   FIND NEXT TICKET NUMBER
+   ========================================================= */
 
-  const existing = await getExistingTickets(type);
+function getNextTicketNumber(tickets: TicketRow[]) {
+  let highest = 0;
 
-  if (existing.length >= requestedCount) {
-    return {
-      tickets: existing.slice(0, requestedCount),
-      created: 0,
-      reused: requestedCount,
-    };
-  }
+  for (const ticket of tickets) {
+    const match = ticket.ticket_code.match(/(\d+)$/);
 
-  const missingCount = requestedCount - existing.length;
+    if (!match) {
+      continue;
+    }
 
-  let highestNumber = 0;
+    const number = Number(match[1]);
 
-  for (const ticket of existing) {
-    const number = extractTicketNumber(ticket.ticket_code, prefix);
-
-    if (number > highestNumber) {
-      highestNumber = number;
+    if (Number.isFinite(number)) {
+      highest = Math.max(highest, number);
     }
   }
 
-  const newTickets = Array.from({ length: missingCount }, (_, index) => {
-    const ticketNumber = highestNumber + index + 1;
-
-    return {
-      ticket_code: getTicketCode(prefix, ticketNumber),
-
-      ticket_type: type.toUpperCase(),
-
-      /**
-       * IMPORTANT:
-       * qr_token is the secret value encoded
-       * into the QR code.
-       */
-      qr_token: randomUUID(),
-
-      status: "UNUSED",
-    };
-  });
-
-  const { data, error } = await supabaseAdmin
-    .from("tickets")
-    .insert(newTickets)
-    .select("id, ticket_code, ticket_type, qr_token, status, created_at");
-
-  if (error) {
-    throw new Error(`Unable to create tickets: ${error.message}`);
-  }
-
-  const createdTickets = (data ?? []) as TicketRow[];
-
-  return {
-    tickets: [...existing, ...createdTickets].slice(0, requestedCount),
-    created: createdTickets.length,
-    reused: existing.length,
-  };
+  return highest + 1;
 }
 
-/**
- * Draws a centered string on a PDF page.
- */
-function drawCenteredText(
-  page: PDFPage,
-  text: string,
-  y: number,
-  font: PDFFont,
-  size: number,
-) {
-  const width = font.widthOfTextAtSize(text, size);
+/* =========================================================
+   ENSURE TICKETS EXIST
+   ========================================================= */
 
+async function ensureTickets(type: TicketType, requestedCount: number) {
+  const existing = await getExistingTickets(type);
+
+  /*
+   * If enough tickets already exist,
+   * reuse the existing tickets.
+   */
+  if (existing.length >= requestedCount) {
+    return existing.slice(0, requestedCount);
+  }
+
+  const table = TABLES[type];
+  const prefix = getPrefix(type);
+
+  const missingCount = requestedCount - existing.length;
+  const nextNumber = getNextTicketNumber(existing);
+
+  const newTickets = Array.from(
+    {
+      length: missingCount,
+    },
+    (_, index) => {
+      const number = nextNumber + index;
+
+      return {
+        ticket_code: getTicketCode(prefix, number),
+        qr_token: randomUUID(),
+        status: "UNUSED",
+      };
+    },
+  );
+
+  const { data, error } = await supabaseAdmin
+    .from(table)
+    .insert(newTickets)
+    .select("id, ticket_code, qr_token, status, created_at");
+
+  if (error) {
+    throw new Error(`Unable to create ${type} tickets: ${error.message}`);
+  }
+
+  const createdTickets = (data ?? []).map((ticket) => ({
+    ...ticket,
+    ticket_type: type,
+  })) as TicketRow[];
+
+  return [...existing, ...createdTickets].slice(0, requestedCount);
+}
+
+/* =========================================================
+   PDF TEXT HELPER
+   ========================================================= */
+
+function addText(
+  page: PDFPage,
+  font: PDFFont,
+  text: string,
+  x: number,
+  y: number,
+  size: number,
+  color = rgb(0.1, 0.1, 0.1),
+) {
   page.drawText(text, {
-    x: (page.getWidth() - width) / 2,
+    x,
     y,
     size,
     font,
-    color: rgb(0.08, 0.08, 0.08),
+    color,
   });
 }
 
-/**
- * Draw QR code PNG on PDF page.
- */
-async function drawQRCode(page: PDFPage, pdf: PDFDocument, qrToken: string) {
-  const qrDataUrl = await QRCode.toDataURL(qrToken, {
-    errorCorrectionLevel: "H",
-    margin: 2,
-    width: 800,
-  });
+/* =========================================================
+   CREATE TICKET PAGE
+   ========================================================= */
 
-  const base64 = qrDataUrl.split(",")[1];
-
-  if (!base64) {
-    throw new Error("Unable to generate QR code image.");
-  }
-
-  const qrBytes = Buffer.from(base64, "base64");
-
-  const qrImage = await pdf.embedPng(qrBytes);
-
-  const qrSize = 230;
-
-  page.drawImage(qrImage, {
-    x: (page.getWidth() - qrSize) / 2,
-    y: 190,
-    width: qrSize,
-    height: qrSize,
-  });
-}
-
-/**
- * Draw one ticket page.
- */
-async function drawTicketPage(
+async function createTicketPage(
   pdf: PDFDocument,
   ticket: TicketRow,
+  qrData: Uint8Array,
   regularFont: PDFFont,
   boldFont: PDFFont,
 ) {
-  const page = pdf.addPage([595.28, 841.89]);
+  const page = pdf.addPage([595, 842]);
 
   const width = page.getWidth();
   const height = page.getHeight();
 
-  /**
-   * Outer border
-   */
+  const black = rgb(0.04, 0.04, 0.04);
+  const gray = rgb(0.42, 0.42, 0.42);
+  const lightGray = rgb(0.9, 0.9, 0.9);
+  const lime = rgb(0.83, 0.97, 0.21);
+
+  /* =======================================================
+     BACKGROUND
+     ======================================================= */
+
   page.drawRectangle({
-    x: 25,
-    y: 25,
-    width: width - 50,
-    height: height - 50,
-    borderWidth: 1.5,
-    borderColor: rgb(0.12, 0.12, 0.12),
+    x: 0,
+    y: 0,
+    width,
+    height,
+    color: rgb(1, 1, 1),
   });
 
-  /**
-   * Header
-   */
-  drawCenteredText(page, "ENTRY PASS", height - 75, boldFont, 28);
+  /* =======================================================
+     TOP ACCENT
+     ======================================================= */
 
-  drawCenteredText(page, ticket.ticket_type, height - 105, regularFont, 11);
+  page.drawRectangle({
+    x: 0,
+    y: height - 7,
+    width,
+    height: 7,
+    color: lime,
+  });
 
-  /**
-   * Divider
-   */
+  /* =======================================================
+     HEADER
+     ======================================================= */
+
+  addText(page, boldFont, "EVENT ENTRY PASS", 55, height - 70, 10, gray);
+
+  addText(page, boldFont, EVENT_NAME, 55, height - 115, 28, black);
+
+  addText(page, regularFont, EVENT_SUBTITLE, 55, height - 138, 11, gray);
+
+  /* =======================================================
+     VENUE
+     ======================================================= */
+
+  addText(page, boldFont, VENUE_NAME, 55, height - 190, 13, black);
+
+  addText(page, regularFont, VENUE_ADDRESS, 55, height - 210, 9, gray);
+
+  /* =======================================================
+     QR CODE
+     ======================================================= */
+
+  const qrImage = await pdf.embedPng(qrData);
+
+  const qrSize = 250;
+
+  const qrX = (width - qrSize) / 2;
+  const qrY = height - 480;
+
+  page.drawImage(qrImage, {
+    x: qrX,
+    y: qrY,
+    width: qrSize,
+    height: qrSize,
+  });
+
+  /* =======================================================
+     QR LABEL
+     ======================================================= */
+
+  const label = "SCAN TO VERIFY";
+
+  const labelWidth = boldFont.widthOfTextAtSize(label, 9);
+
+  addText(page, boldFont, label, (width - labelWidth) / 2, qrY - 25, 9, gray);
+
+  /* =======================================================
+     TICKET ID
+     ======================================================= */
+
+  addText(page, boldFont, "TICKET ID", 55, height - 535, 8, gray);
+
+  addText(page, boldFont, ticket.ticket_code, 55, height - 560, 17, black);
+
   page.drawLine({
     start: {
-      x: 60,
-      y: height - 130,
+      x: 55,
+      y: height - 580,
     },
     end: {
-      x: width - 60,
-      y: height - 130,
+      x: width - 55,
+      y: height - 580,
     },
     thickness: 1,
-    color: rgb(0.75, 0.75, 0.75),
+    color: lightGray,
   });
 
-  /**
-   * Ticket code
-   */
-  drawCenteredText(page, ticket.ticket_code, height - 175, boldFont, 24);
+  /* =======================================================
+     TICKET TYPE
+     ======================================================= */
 
-  drawCenteredText(page, "SCAN THIS QR CODE AT ENTRY", 165, regularFont, 10);
+  addText(page, boldFont, "TICKET TYPE", 55, height - 615, 8, gray);
 
-  /**
-   * QR code
-   *
-   * IMPORTANT:
-   * The QR contains qr_token, NOT the
-   * human-readable ticket code.
-   */
-  await drawQRCode(page, pdf, ticket.qr_token);
-
-  /**
-   * Footer
-   */
-  drawCenteredText(
+  addText(
     page,
-    "Valid entry pass • One-time verification",
-    85,
-    regularFont,
-    9,
+    boldFont,
+    getTicketLabel(ticket.ticket_type).toUpperCase(),
+    55,
+    height - 640,
+    13,
+    black,
   );
 
-  drawCenteredText(page, ticket.ticket_code, 60, regularFont, 9);
+  page.drawLine({
+    start: {
+      x: 55,
+      y: height - 660,
+    },
+    end: {
+      x: width - 55,
+      y: height - 660,
+    },
+    thickness: 1,
+    color: lightGray,
+  });
+
+  /* =======================================================
+     VENUE DETAILS
+     ======================================================= */
+
+  addText(page, boldFont, "VENUE", 55, height - 695, 8, gray);
+
+  addText(page, boldFont, VENUE_NAME, 55, height - 720, 12, black);
+
+  addText(page, regularFont, VENUE_ADDRESS, 55, height - 740, 8, gray);
+
+  /* =======================================================
+     FOOTER
+     ======================================================= */
+
+  page.drawLine({
+    start: {
+      x: 55,
+      y: 55,
+    },
+    end: {
+      x: width - 55,
+      y: 55,
+    },
+    thickness: 1,
+    color: lightGray,
+  });
+
+  addText(
+    page,
+    regularFont,
+    "Present this QR code at the event entrance.",
+    55,
+    35,
+    7,
+    gray,
+  );
 }
 
-/**
- * GET /api/tickets/pdf?type=single&count=500
- */
+/* =========================================================
+   GENERATE PDF
+   ========================================================= */
+
+async function generatePdf(tickets: TicketRow[]) {
+  const pdf = await PDFDocument.create();
+
+  const regularFont = await pdf.embedFont(StandardFonts.Helvetica);
+
+  const boldFont = await pdf.embedFont(StandardFonts.HelveticaBold);
+
+  for (const ticket of tickets) {
+    /*
+     * IMPORTANT:
+     *
+     * The QR code contains ONLY the random qr_token.
+     *
+     * Scanner sends this token to:
+     *
+     * POST /api/tickets/scan
+     */
+
+    const qrPayload = ticket.qr_token;
+
+    const qrBuffer = await QRCode.toBuffer(qrPayload, {
+      type: "png",
+      width: 700,
+      margin: 2,
+      errorCorrectionLevel: "H",
+    });
+
+    await createTicketPage(pdf, ticket, qrBuffer, regularFont, boldFont);
+  }
+
+  return pdf.save();
+}
+
+/* =========================================================
+   GET
+   ========================================================= */
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
 
-    const type = normalizeTicketType(searchParams.get("type"));
+    /*
+     * Supported:
+     *
+     * ?single=100
+     * ?couple=100
+     * ?single=100&couple=100
+     */
 
-    const countValue = searchParams.get("count") ?? "1";
+    const requestedSingle = parseCount(searchParams.get("single"));
 
-    const count = Number(countValue);
+    const requestedCouple = parseCount(searchParams.get("couple"));
 
-    if (!Number.isInteger(count) || count < 1 || count > 5000) {
+    /*
+     * BACKWARD COMPATIBILITY
+     *
+     * ?type=single&count=100
+     * ?type=couple&count=100
+     */
+
+    const legacyCount = parseCount(searchParams.get("count"));
+
+    const legacyType =
+      searchParams.get("type") === "couple" ? "couple" : "single";
+
+    let singleCount = requestedSingle;
+    let coupleCount = requestedCouple;
+
+    if (
+      !searchParams.has("single") &&
+      !searchParams.has("couple") &&
+      legacyCount > 0
+    ) {
+      if (legacyType === "single") {
+        singleCount = legacyCount;
+      } else {
+        coupleCount = legacyCount;
+      }
+    }
+
+    /* =====================================================
+       VALIDATE REQUEST
+       ===================================================== */
+
+    if (singleCount <= 0 && coupleCount <= 0) {
       return NextResponse.json(
         {
           success: false,
-          error: "Count must be an integer between 1 and 5000.",
+          message:
+            "Provide at least one ticket count. Example: ?single=100&couple=100",
         },
         {
           status: 400,
@@ -318,91 +469,115 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log(`[PDF] Preparing ${count} ${type} tickets`);
+    /* =====================================================
+       PREPARE SINGLE TICKETS
+       ===================================================== */
 
-    /**
-     * Reuse existing tickets whenever possible.
-     */
-    const result = await ensureTickets(type, count);
+    let singleTickets: TicketRow[] = [];
 
-    console.log(`[PDF] Tickets ready: ${result.tickets.length}`);
+    if (singleCount > 0) {
+      singleTickets = await ensureTickets("single", singleCount);
+    }
 
-    console.log(`[PDF] Created: ${result.created}`);
+    /* =====================================================
+       PREPARE COUPLE TICKETS
+       ===================================================== */
 
-    console.log(`[PDF] Reused: ${result.reused}`);
+    let coupleTickets: TicketRow[] = [];
 
-    /**
-     * Make sure every ticket has a QR token.
-     */
-    const invalidTicket = result.tickets.find(
-      (ticket) => !ticket.qr_token || ticket.qr_token.trim().length === 0,
-    );
+    if (coupleCount > 0) {
+      coupleTickets = await ensureTickets("couple", coupleCount);
+    }
 
-    if (invalidTicket) {
-      throw new Error(
-        `Ticket ${invalidTicket.ticket_code} does not have a valid qr_token.`,
+    /* =====================================================
+       VALIDATION
+       ===================================================== */
+
+    if (singleTickets.length < singleCount) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Unable to prepare the requested Single tickets.",
+          requested: singleCount,
+          available: singleTickets.length,
+        },
+        {
+          status: 500,
+        },
       );
     }
 
-    /**
-     * Create PDF.
-     */
-    const pdf = await PDFDocument.create();
-
-    const regularFont = await pdf.embedFont(StandardFonts.Helvetica);
-
-    const boldFont = await pdf.embedFont(StandardFonts.HelveticaBold);
-
-    /**
-     * One ticket = one PDF page.
-     */
-    for (const ticket of result.tickets) {
-      await drawTicketPage(pdf, ticket, regularFont, boldFont);
+    if (coupleTickets.length < coupleCount) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Unable to prepare the requested Couple tickets.",
+          requested: coupleCount,
+          available: coupleTickets.length,
+        },
+        {
+          status: 500,
+        },
+      );
     }
 
-    const pdfBytes = await pdf.save();
+    /* =====================================================
+       COMBINE TICKETS
+       ===================================================== */
 
-    /**
-     * IMPORTANT FIX:
-     *
-     * pdf-lib returns Uint8Array.
-     * NextResponse in the current Next.js/
-     * TypeScript setup does not accept that
-     * type directly.
-     *
-     * Convert it to a Node Buffer first.
-     */
+    const tickets = [...singleTickets, ...coupleTickets];
+
+    /* =====================================================
+       GENERATE PDF
+       ===================================================== */
+
+    const pdfBytes = await generatePdf(tickets);
+
     const pdfBuffer = Buffer.from(pdfBytes);
 
-    console.log(`[PDF] Generated ${result.tickets.length} pages`);
+    /* =====================================================
+       FILE NAME
+       ===================================================== */
+
+    let filename = "entrypass-tickets.pdf";
+
+    if (singleCount > 0 && coupleCount > 0) {
+      filename = `entrypass-single-${singleCount}-couple-${coupleCount}.pdf`;
+    } else if (singleCount > 0) {
+      filename = `entrypass-single-${singleCount}.pdf`;
+    } else if (coupleCount > 0) {
+      filename = `entrypass-couple-${coupleCount}.pdf`;
+    }
+
+    /* =====================================================
+       DOWNLOAD RESPONSE
+       ===================================================== */
 
     return new NextResponse(pdfBuffer, {
       status: 200,
-
       headers: {
         "Content-Type": "application/pdf",
 
-        "Content-Disposition": `attachment; filename="${type}-tickets-${count}.pdf"`,
+        "Content-Disposition": `attachment; filename="${filename}"`,
 
-        "Content-Length": String(pdfBuffer.length),
-
-        "Cache-Control": "no-store, no-cache, must-revalidate",
+        "Cache-Control":
+          "no-store, no-cache, must-revalidate, proxy-revalidate",
 
         Pragma: "no-cache",
+
+        Expires: "0",
       },
     });
   } catch (error) {
-    console.error("[PDF] Ticket generation failed:", error);
-
-    const message =
-      error instanceof Error
-        ? error.message
-        : "Unknown error while generating PDF.";
+    console.error("[TICKET PDF] Generation failed:", error);
 
     return NextResponse.json(
       {
         success: false,
-        error: message,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Unable to generate ticket PDF.",
       },
       {
         status: 500,

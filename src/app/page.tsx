@@ -10,7 +10,6 @@ export default function Home() {
 
         <nav className="apple-nav-links" aria-label="Main navigation">
           <Link href="/admin/scanner">Scanner</Link>
-          <Link href="/admin/tickets">Tickets</Link>
         </nav>
       </header>
 

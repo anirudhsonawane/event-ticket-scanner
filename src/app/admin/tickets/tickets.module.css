@@ -1,0 +1,96 @@
+/* =========================================================
+   ENTRY PASS — TICKETS DASHBOARD
+   Clean Apple-inspired admin UI
+   ========================================================= */
+
+.page {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff !important;
+  color: #1d1d1f !important;
+  font-family:
+    var(--font-geist-sans),
+    -apple-system,
+    BlinkMacSystemFont,
+    "SF Pro Display",
+    "SF Pro Text",
+    "Segoe UI",
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.page *,
+.page *::before,
+.page *::after {
+  box-sizing: border-box;
+}
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.page .header {
+  width: min(1180px, calc(100% - 48px));
+  height: 72px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 0 0 auto;
+  border-bottom: 1px solid #e8e8ed;
+}
+
+.page .logo {
+  display: inline-flex;
+  align-items: center;
+  color: #1d1d1f !important;
+  text-decoration: none !important;
+  font-size: 17px;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: -0.045em;
+}
+
+.page .logo span {
+  color: #86868b;
+}
+
+.page .nav {
+  display: flex;
+  align-items: center;
+  gap: 34px;
+}
+
+.page .nav a {
+  color: #6e6e73 !important;
+  text-decoration: none !important;
+  font-size: 14px;
+  line-height: 1;
+  font-weight: 400;
+  transition:
+    color 180ms ease,
+    opacity 180ms ease;
+}
+
+.page .nav a:hover {
+  color: #1d1d1f !important;
+}
+
+.page .nav .activeNav {
+  color: #1d1d1f !important;
+  font-weight: 600;
+}
+
+/* =========================================================
+   MAIN
+   ========================================================= */
+
+.page .main {
+  width: min(980px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 92px 0 76px;
+  flex: 1 0 auto;
+}
