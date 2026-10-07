@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import QRCode from "qrcode";
-import { PDFDocument, PDFPage, PDFFont, rgb, StandardFonts } from "pdf-lib";
 import { randomUUID } from "crypto";
+
+import QRCode from "qrcode";
+
+import { PDFDocument, PDFPage, PDFFont, rgb, StandardFonts } from "pdf-lib";
 
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
 export const runtime = "nodejs";
+
+/* =========================================================
+   TYPES
+   ========================================================= */
 
 type TicketType = "single" | "couple";
 
@@ -19,46 +25,104 @@ type TicketRow = {
 };
 
 /* =========================================================
-   CONSTANTS
+   PDF SETTINGS
    ========================================================= */
 
-const TABLES = {
-  single: "single_tickets",
-  couple: "couple_tickets",
-} as const;
+const PAGE_WIDTH = 595;
+const PAGE_HEIGHT = 842;
 
-const VENUE_NAME = "GURUKUL OLYMPIAD SCHOOL";
-const VENUE_ADDRESS = "BESIDES SHAHANOORWADI, BEED";
-const EVENT_NAME = "NAV DURGA";
-const EVENT_SUBTITLE = "RAAS DANDIYA 2026";
+/*
+ * 3 columns × 3 rows
+ *
+ * This matches the uploaded reference PDF.
+ */
+const COLUMNS = 3;
+const ROWS = 3;
+
+const TICKETS_PER_PAGE = COLUMNS * ROWS;
+
+/*
+ * Individual ticket/card size.
+ */
+const CARD_WIDTH = 170;
+const CARD_HEIGHT = 238;
+
+/*
+ * Horizontal and vertical gaps.
+ */
+const GAP_X = 14;
+const GAP_Y = 14;
+
+/*
+ * Total grid dimensions.
+ */
+const GRID_WIDTH = COLUMNS * CARD_WIDTH + (COLUMNS - 1) * GAP_X;
+
+const GRID_HEIGHT = ROWS * CARD_HEIGHT + (ROWS - 1) * GAP_Y;
+
+/*
+ * Center the complete grid on A4.
+ */
+const GRID_START_X = (PAGE_WIDTH - GRID_WIDTH) / 2;
+
+const GRID_START_Y = PAGE_HEIGHT - (PAGE_HEIGHT - GRID_HEIGHT) / 2;
 
 /* =========================================================
-   HELPERS
+   TYPE HELPERS
    ========================================================= */
 
-function getPrefix(type: TicketType) {
-  return type === "couple" ? "CPL" : "SGL";
+function getTableName(type: TicketType): "single_tickets" | "couple_tickets" {
+  if (type === "couple") {
+    return "couple_tickets";
+  }
+
+  return "single_tickets";
 }
 
-function getTicketLabel(type: TicketType) {
-  return type === "couple" ? "Couple Entry" : "Single Entry";
+function getPrefix(type: TicketType): string {
+  if (type === "couple") {
+    return "CPL";
+  }
+
+  return "SGL";
 }
 
-function getTicketCode(prefix: string, number: number) {
+function getTicketLabel(type: TicketType): string {
+  if (type === "couple") {
+    return "Couple";
+  }
+
+  return "Single";
+}
+
+function getTicketCode(type: TicketType, number: number): string {
+  const prefix = getPrefix(type);
+
   return `${prefix}-${String(number).padStart(4, "0")}`;
 }
 
-function parseCount(value: string | null) {
+/* =========================================================
+   COUNT PARSER
+   ========================================================= */
+
+function parseCount(value: string | null): number {
   if (!value) {
     return 0;
   }
 
   const count = Number(value);
 
-  if (!Number.isInteger(count) || count < 0) {
+  if (!Number.isInteger(count)) {
     return 0;
   }
 
+  if (count < 1) {
+    return 0;
+  }
+
+  /*
+   * Safety limit.
+   */
   return Math.min(count, 5000);
 }
 
@@ -66,8 +130,9 @@ function parseCount(value: string | null) {
    GET EXISTING TICKETS
    ========================================================= */
 
-async function getExistingTickets(type: TicketType) {
-  const table = TABLES[type];
+async function getExistingTickets(type: TicketType): Promise<TicketRow[]> {
+  const table = getTableName(type);
+
   const prefix = getPrefix(type);
 
   const { data, error } = await supabaseAdmin
@@ -79,9 +144,7 @@ async function getExistingTickets(type: TicketType) {
     });
 
   if (error) {
-    throw new Error(
-      `Unable to read existing ${type} tickets: ${error.message}`,
-    );
+    throw new Error(`Unable to read ${type} tickets: ${error.message}`);
   }
 
   return (data ?? []).map((ticket) => ({
@@ -94,7 +157,7 @@ async function getExistingTickets(type: TicketType) {
    FIND NEXT TICKET NUMBER
    ========================================================= */
 
-function getNextTicketNumber(tickets: TicketRow[]) {
+function getNextTicketNumber(tickets: TicketRow[]): number {
   let highest = 0;
 
   for (const ticket of tickets) {
@@ -115,24 +178,30 @@ function getNextTicketNumber(tickets: TicketRow[]) {
 }
 
 /* =========================================================
-   ENSURE TICKETS EXIST
+   ENSURE REQUESTED TICKETS EXIST
    ========================================================= */
 
-async function ensureTickets(type: TicketType, requestedCount: number) {
+async function ensureTickets(
+  type: TicketType,
+  requestedCount: number,
+): Promise<TicketRow[]> {
   const existing = await getExistingTickets(type);
 
   /*
    * If enough tickets already exist,
-   * reuse the existing tickets.
+   * reuse them.
+   *
+   * This prevents duplicate tickets
+   * when the PDF URL is opened again.
    */
   if (existing.length >= requestedCount) {
     return existing.slice(0, requestedCount);
   }
 
-  const table = TABLES[type];
-  const prefix = getPrefix(type);
+  const table = getTableName(type);
 
   const missingCount = requestedCount - existing.length;
+
   const nextNumber = getNextTicketNumber(existing);
 
   const newTickets = Array.from(
@@ -143,8 +212,10 @@ async function ensureTickets(type: TicketType, requestedCount: number) {
       const number = nextNumber + index;
 
       return {
-        ticket_code: getTicketCode(prefix, number),
+        ticket_code: getTicketCode(type, number),
+
         qr_token: randomUUID(),
+
         status: "UNUSED",
       };
     },
@@ -159,27 +230,27 @@ async function ensureTickets(type: TicketType, requestedCount: number) {
     throw new Error(`Unable to create ${type} tickets: ${error.message}`);
   }
 
-  const createdTickets = (data ?? []).map((ticket) => ({
+  const created = (data ?? []).map((ticket) => ({
     ...ticket,
     ticket_type: type,
   })) as TicketRow[];
 
-  return [...existing, ...createdTickets].slice(0, requestedCount);
+  return [...existing, ...created].slice(0, requestedCount);
 }
 
 /* =========================================================
-   PDF TEXT HELPER
+   TEXT DRAWING
    ========================================================= */
 
-function addText(
+function drawText(
   page: PDFPage,
   font: PDFFont,
   text: string,
   x: number,
   y: number,
   size: number,
-  color = rgb(0.1, 0.1, 0.1),
-) {
+  color = rgb(0.05, 0.05, 0.05),
+): void {
   page.drawText(text, {
     x,
     y,
@@ -190,67 +261,83 @@ function addText(
 }
 
 /* =========================================================
-   CREATE TICKET PAGE
+   CENTERED TEXT
    ========================================================= */
 
-async function createTicketPage(
+function drawCenteredText(
+  page: PDFPage,
+  font: PDFFont,
+  text: string,
+  centerX: number,
+  y: number,
+  size: number,
+  color = rgb(0.05, 0.05, 0.05),
+): void {
+  const textWidth = font.widthOfTextAtSize(text, size);
+
+  const x = centerX - textWidth / 2;
+
+  drawText(page, font, text, x, y, size, color);
+}
+
+/* =========================================================
+   GET GUEST NUMBER
+   ========================================================= */
+
+function getGuestNumber(ticket: TicketRow): string {
+  const match = ticket.ticket_code.match(/(\d+)$/);
+
+  if (!match) {
+    return "0";
+  }
+
+  return String(Number(match[1]));
+}
+
+/* =========================================================
+   DRAW ONE TICKET
+   ========================================================= */
+
+async function drawTicketCard(
   pdf: PDFDocument,
+  page: PDFPage,
   ticket: TicketRow,
   qrData: Uint8Array,
   regularFont: PDFFont,
   boldFont: PDFFont,
-) {
-  const page = pdf.addPage([595, 842]);
+  x: number,
+  y: number,
+): Promise<void> {
+  const borderColor = rgb(0.78, 0.78, 0.78);
 
-  const width = page.getWidth();
-  const height = page.getHeight();
+  const darkColor = rgb(0.02, 0.08, 0.12);
 
-  const black = rgb(0.04, 0.04, 0.04);
-  const gray = rgb(0.42, 0.42, 0.42);
-  const lightGray = rgb(0.9, 0.9, 0.9);
-  const lime = rgb(0.83, 0.97, 0.21);
+  const navyColor = rgb(0.03, 0.16, 0.28);
+
+  const grayColor = rgb(0.3, 0.3, 0.3);
+
+  const whiteColor = rgb(1, 1, 1);
 
   /* =======================================================
-     BACKGROUND
+     CARD
      ======================================================= */
 
+  /*
+   * pdf-lib does not provide
+   * drawRoundedRectangle().
+   *
+   * Therefore we use a clean
+   * bordered rectangle.
+   */
   page.drawRectangle({
-    x: 0,
-    y: 0,
-    width,
-    height,
-    color: rgb(1, 1, 1),
+    x,
+    y,
+    width: CARD_WIDTH,
+    height: CARD_HEIGHT,
+    color: whiteColor,
+    borderColor,
+    borderWidth: 0.8,
   });
-
-  /* =======================================================
-     TOP ACCENT
-     ======================================================= */
-
-  page.drawRectangle({
-    x: 0,
-    y: height - 7,
-    width,
-    height: 7,
-    color: lime,
-  });
-
-  /* =======================================================
-     HEADER
-     ======================================================= */
-
-  addText(page, boldFont, "EVENT ENTRY PASS", 55, height - 70, 10, gray);
-
-  addText(page, boldFont, EVENT_NAME, 55, height - 115, 28, black);
-
-  addText(page, regularFont, EVENT_SUBTITLE, 55, height - 138, 11, gray);
-
-  /* =======================================================
-     VENUE
-     ======================================================= */
-
-  addText(page, boldFont, VENUE_NAME, 55, height - 190, 13, black);
-
-  addText(page, regularFont, VENUE_ADDRESS, 55, height - 210, 9, gray);
 
   /* =======================================================
      QR CODE
@@ -258,10 +345,11 @@ async function createTicketPage(
 
   const qrImage = await pdf.embedPng(qrData);
 
-  const qrSize = 250;
+  const qrSize = 128;
 
-  const qrX = (width - qrSize) / 2;
-  const qrY = height - 480;
+  const qrX = x + (CARD_WIDTH - qrSize) / 2;
+
+  const qrY = y + 78;
 
   page.drawImage(qrImage, {
     x: qrX,
@@ -271,100 +359,47 @@ async function createTicketPage(
   });
 
   /* =======================================================
-     QR LABEL
+     GUEST NUMBER
      ======================================================= */
 
-  const label = "SCAN TO VERIFY";
+  const guestNumber = getGuestNumber(ticket);
 
-  const labelWidth = boldFont.widthOfTextAtSize(label, 9);
-
-  addText(page, boldFont, label, (width - labelWidth) / 2, qrY - 25, 9, gray);
+  drawCenteredText(
+    page,
+    boldFont,
+    `GUEST ${guestNumber}`,
+    x + CARD_WIDTH / 2,
+    y + 55,
+    12,
+    navyColor,
+  );
 
   /* =======================================================
-     TICKET ID
+     GUEST LIST
      ======================================================= */
 
-  addText(page, boldFont, "TICKET ID", 55, height - 535, 8, gray);
-
-  addText(page, boldFont, ticket.ticket_code, 55, height - 560, 17, black);
-
-  page.drawLine({
-    start: {
-      x: 55,
-      y: height - 580,
-    },
-    end: {
-      x: width - 55,
-      y: height - 580,
-    },
-    thickness: 1,
-    color: lightGray,
-  });
+  drawCenteredText(
+    page,
+    regularFont,
+    "Guest List",
+    x + CARD_WIDTH / 2,
+    y + 38,
+    10,
+    darkColor,
+  );
 
   /* =======================================================
      TICKET TYPE
      ======================================================= */
 
-  addText(page, boldFont, "TICKET TYPE", 55, height - 615, 8, gray);
-
-  addText(
-    page,
-    boldFont,
-    getTicketLabel(ticket.ticket_type).toUpperCase(),
-    55,
-    height - 640,
-    13,
-    black,
-  );
-
-  page.drawLine({
-    start: {
-      x: 55,
-      y: height - 660,
-    },
-    end: {
-      x: width - 55,
-      y: height - 660,
-    },
-    thickness: 1,
-    color: lightGray,
-  });
-
-  /* =======================================================
-     VENUE DETAILS
-     ======================================================= */
-
-  addText(page, boldFont, "VENUE", 55, height - 695, 8, gray);
-
-  addText(page, boldFont, VENUE_NAME, 55, height - 720, 12, black);
-
-  addText(page, regularFont, VENUE_ADDRESS, 55, height - 740, 8, gray);
-
-  /* =======================================================
-     FOOTER
-     ======================================================= */
-
-  page.drawLine({
-    start: {
-      x: 55,
-      y: 55,
-    },
-    end: {
-      x: width - 55,
-      y: 55,
-    },
-    thickness: 1,
-    color: lightGray,
-  });
-
-  addText(
+  drawCenteredText(
     page,
     regularFont,
-    "Present this QR code at the event entrance.",
-    55,
-    35,
-    7,
-    gray,
+    getTicketLabel(ticket.ticket_type),
+    x + CARD_WIDTH / 2,
+    y + 21,
+    9,
+    grayColor,
   );
 }
 
@@ -372,208 +407,258 @@ async function createTicketPage(
    GENERATE PDF
    ========================================================= */
 
-async function generatePdf(tickets: TicketRow[]) {
+async function generatePdf(tickets: TicketRow[]): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
 
   const regularFont = await pdf.embedFont(StandardFonts.Helvetica);
 
   const boldFont = await pdf.embedFont(StandardFonts.HelveticaBold);
 
-  for (const ticket of tickets) {
+  /*
+   * Reverse the tickets so:
+   *
+   * GUEST 100
+   * GUEST 99
+   * GUEST 98
+   *
+   * appear first, matching
+   * the uploaded reference.
+   */
+  const orderedTickets = [...tickets].reverse();
+
+  for (let index = 0; index < orderedTickets.length; index++) {
+    /*
+     * Add a new A4 page
+     * every 9 tickets.
+     */
+    if (index % TICKETS_PER_PAGE === 0) {
+      pdf.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+    }
+
+    const pages = pdf.getPages();
+
+    const page = pages[pages.length - 1];
+
+    const position = index % TICKETS_PER_PAGE;
+
+    const row = Math.floor(position / COLUMNS);
+
+    const column = position % COLUMNS;
+
+    const x = GRID_START_X + column * (CARD_WIDTH + GAP_X);
+
+    const y = GRID_START_Y - CARD_HEIGHT - row * (CARD_HEIGHT + GAP_Y);
+
+    const ticket = orderedTickets[index];
+
     /*
      * IMPORTANT:
      *
-     * The QR code contains ONLY the random qr_token.
+     * The QR contains ONLY
+     * the random qr_token.
      *
-     * Scanner sends this token to:
-     *
-     * POST /api/tickets/scan
+     * Nothing else.
      */
-
-    const qrPayload = ticket.qr_token;
-
-    const qrBuffer = await QRCode.toBuffer(qrPayload, {
+    const qrBuffer = await QRCode.toBuffer(ticket.qr_token, {
       type: "png",
-      width: 700,
-      margin: 2,
+      width: 600,
+      margin: 1,
       errorCorrectionLevel: "H",
     });
 
-    await createTicketPage(pdf, ticket, qrBuffer, regularFont, boldFont);
+    await drawTicketCard(
+      pdf,
+      page,
+      ticket,
+      qrBuffer,
+      regularFont,
+      boldFont,
+      x,
+      y,
+    );
   }
 
   return pdf.save();
 }
 
 /* =========================================================
+   PDF RESPONSE
+   ========================================================= */
+
+function createPdfResponse(pdf: Uint8Array, filename: string): NextResponse {
+  const buffer = Buffer.from(pdf);
+
+  return new NextResponse(buffer, {
+    status: 200,
+
+    headers: {
+      "Content-Type": "application/pdf",
+
+      /*
+       * attachment = force download.
+       */
+      "Content-Disposition": `attachment; filename="${filename}"`,
+
+      /*
+       * Never cache generated
+       * ticket PDFs.
+       */
+      "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+
+      Pragma: "no-cache",
+
+      Expires: "0",
+    },
+  });
+}
+
+/* =========================================================
+   GENERATE ONE TYPE
+   ========================================================= */
+
+async function generateTicketResponse(
+  type: TicketType,
+  count: number,
+): Promise<NextResponse> {
+  if (count <= 0) {
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Invalid ticket count.",
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+  const tickets = await ensureTickets(type, count);
+
+  if (tickets.length < count) {
+    return NextResponse.json(
+      {
+        success: false,
+        message: `Unable to prepare ${count} ${type} tickets.`,
+
+        requested: count,
+
+        available: tickets.length,
+      },
+      {
+        status: 500,
+      },
+    );
+  }
+
+  console.log(`[TICKET PDF] Generating ${count} ${type} tickets`);
+
+  const pdf = await generatePdf(tickets);
+
+  const filename = `entrypass-${type}-${count}.pdf`;
+
+  return createPdfResponse(pdf, filename);
+}
+
+/* =========================================================
    GET
    ========================================================= */
 
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     const { searchParams } = new URL(request.url);
 
+    /* =====================================================
+       SINGLE
+       ===================================================== */
+
+    const singleCount = parseCount(searchParams.get("single"));
+
+    /* =====================================================
+       COUPLE
+       ===================================================== */
+
+    const coupleCount = parseCount(searchParams.get("couple"));
+
+    /* =====================================================
+       LEGACY FORMAT
+       ===================================================== */
+
     /*
-     * Supported:
-     *
-     * ?single=100
-     * ?couple=100
-     * ?single=100&couple=100
-     */
-
-    const requestedSingle = parseCount(searchParams.get("single"));
-
-    const requestedCouple = parseCount(searchParams.get("couple"));
-
-    /*
-     * BACKWARD COMPATIBILITY
+     * Also supports:
      *
      * ?type=single&count=100
+     *
      * ?type=couple&count=100
      */
+    if (singleCount === 0 && coupleCount === 0 && searchParams.has("type")) {
+      const legacyType = searchParams.get("type");
 
-    const legacyCount = parseCount(searchParams.get("count"));
+      const legacyCount = parseCount(searchParams.get("count"));
 
-    const legacyType =
-      searchParams.get("type") === "couple" ? "couple" : "single";
-
-    let singleCount = requestedSingle;
-    let coupleCount = requestedCouple;
-
-    if (
-      !searchParams.has("single") &&
-      !searchParams.has("couple") &&
-      legacyCount > 0
-    ) {
       if (legacyType === "single") {
-        singleCount = legacyCount;
-      } else {
-        coupleCount = legacyCount;
+        return generateTicketResponse("single", legacyCount);
+      }
+
+      if (legacyType === "couple") {
+        return generateTicketResponse("couple", legacyCount);
       }
     }
 
     /* =====================================================
-       VALIDATE REQUEST
+       BOTH TYPES
        ===================================================== */
-
-    if (singleCount <= 0 && coupleCount <= 0) {
-      return NextResponse.json(
-        {
-          success: false,
-          message:
-            "Provide at least one ticket count. Example: ?single=100&couple=100",
-        },
-        {
-          status: 400,
-        },
-      );
-    }
-
-    /* =====================================================
-       PREPARE SINGLE TICKETS
-       ===================================================== */
-
-    let singleTickets: TicketRow[] = [];
-
-    if (singleCount > 0) {
-      singleTickets = await ensureTickets("single", singleCount);
-    }
-
-    /* =====================================================
-       PREPARE COUPLE TICKETS
-       ===================================================== */
-
-    let coupleTickets: TicketRow[] = [];
-
-    if (coupleCount > 0) {
-      coupleTickets = await ensureTickets("couple", coupleCount);
-    }
-
-    /* =====================================================
-       VALIDATION
-       ===================================================== */
-
-    if (singleTickets.length < singleCount) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Unable to prepare the requested Single tickets.",
-          requested: singleCount,
-          available: singleTickets.length,
-        },
-        {
-          status: 500,
-        },
-      );
-    }
-
-    if (coupleTickets.length < coupleCount) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Unable to prepare the requested Couple tickets.",
-          requested: coupleCount,
-          available: coupleTickets.length,
-        },
-        {
-          status: 500,
-        },
-      );
-    }
-
-    /* =====================================================
-       COMBINE TICKETS
-       ===================================================== */
-
-    const tickets = [...singleTickets, ...coupleTickets];
-
-    /* =====================================================
-       GENERATE PDF
-       ===================================================== */
-
-    const pdfBytes = await generatePdf(tickets);
-
-    const pdfBuffer = Buffer.from(pdfBytes);
-
-    /* =====================================================
-       FILE NAME
-       ===================================================== */
-
-    let filename = "entrypass-tickets.pdf";
 
     if (singleCount > 0 && coupleCount > 0) {
-      filename = `entrypass-single-${singleCount}-couple-${coupleCount}.pdf`;
-    } else if (singleCount > 0) {
-      filename = `entrypass-single-${singleCount}.pdf`;
-    } else if (coupleCount > 0) {
-      filename = `entrypass-couple-${coupleCount}.pdf`;
+      const singleTickets = await ensureTickets("single", singleCount);
+
+      const coupleTickets = await ensureTickets("couple", coupleCount);
+
+      const tickets = [...singleTickets, ...coupleTickets];
+
+      const pdf = await generatePdf(tickets);
+
+      const filename = `entrypass-single-${singleCount}-couple-${coupleCount}.pdf`;
+
+      return createPdfResponse(pdf, filename);
     }
 
     /* =====================================================
-       DOWNLOAD RESPONSE
+       SINGLE ONLY
        ===================================================== */
 
-    return new NextResponse(pdfBuffer, {
-      status: 200,
-      headers: {
-        "Content-Type": "application/pdf",
+    if (singleCount > 0) {
+      return generateTicketResponse("single", singleCount);
+    }
 
-        "Content-Disposition": `attachment; filename="${filename}"`,
+    /* =====================================================
+       COUPLE ONLY
+       ===================================================== */
 
-        "Cache-Control":
-          "no-store, no-cache, must-revalidate, proxy-revalidate",
+    if (coupleCount > 0) {
+      return generateTicketResponse("couple", coupleCount);
+    }
 
-        Pragma: "no-cache",
+    /* =====================================================
+       INVALID REQUEST
+       ===================================================== */
 
-        Expires: "0",
+    return NextResponse.json(
+      {
+        success: false,
+
+        message: "Provide a ticket count. Example: ?single=100 or ?couple=100",
       },
-    });
+      {
+        status: 400,
+      },
+    );
   } catch (error) {
     console.error("[TICKET PDF] Generation failed:", error);
 
     return NextResponse.json(
       {
         success: false,
+
         message:
           error instanceof Error
             ? error.message
