@@ -1,48 +1,77 @@
 /* =========================================================
    ENTRY PASS — SCANNER
-   Apple-style / full viewport / no page scroll
+   Clean white Apple-style interface
    ========================================================= */
 
 .apple-scanner-page {
-  --black: #1d1d1f;
-  --muted: #6e6e73;
-  --soft: #f5f5f7;
-  --border: #d2d2d7;
-  --accent: #d7ff00;
-  --green: #34c759;
-  --red: #ff3b30;
+  --scanner-black: #111111;
+  --scanner-text: #171717;
+  --scanner-muted: #6b6b6b;
+  --scanner-light: #8a8a8a;
+  --scanner-border: #e5e5e5;
+  --scanner-border-dark: #d8d8d8;
+  --scanner-surface: #ffffff;
+  --scanner-surface-soft: #f7f7f7;
+  --scanner-lime: #d9ff38;
+  --scanner-success: #16803c;
+  --scanner-danger: #c62828;
+  --scanner-warning: #9a6700;
+
+  position: relative;
 
   width: 100%;
-  height: 100svh;
   min-height: 100svh;
 
-  overflow: hidden;
-
-  display: flex;
-  flex-direction: column;
+  overflow-x: hidden;
 
   background: #ffffff;
-  color: var(--black);
+
+  color: var(--scanner-text);
 
   font-family:
-    -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
-    "Helvetica Neue", Arial, sans-serif;
+    var(--font-geist-sans),
+    -apple-system,
+    BlinkMacSystemFont,
+    "SF Pro Display",
+    "SF Pro Text",
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
 
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
-html:has(.apple-scanner-page),
-body:has(.apple-scanner-page) {
-  height: 100%;
+/* =========================================================
+   BACKGROUND
+   ========================================================= */
+
+.apple-scanner-background {
+  position: fixed;
+
+  inset: 0;
+
+  z-index: 0;
+
+  pointer-events: none;
+
   overflow: hidden;
+
   background: #ffffff;
 }
 
-.apple-scanner-page *,
-.apple-scanner-page *::before,
-.apple-scanner-page *::after {
-  box-sizing: border-box;
+.apple-background-grid {
+  position: absolute;
+
+  inset: 0;
+
+  opacity: 0;
+
+  pointer-events: none;
+}
+
+.apple-background-glow {
+  display: none;
 }
 
 /* =========================================================
@@ -50,131 +79,205 @@ body:has(.apple-scanner-page) {
    ========================================================= */
 
 .apple-scanner-nav {
-  width: min(1200px, calc(100% - 48px));
-  height: 64px;
-  min-height: 64px;
+  position: relative;
 
-  margin: 0 auto;
+  z-index: 20;
+
+  width: 100%;
+
+  min-height: 76px;
+
+  padding: max(18px, env(safe-area-inset-top)) 32px 18px;
 
   display: flex;
+
   align-items: center;
+
   justify-content: space-between;
 
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--scanner-border);
 
-  flex: 0 0 auto;
+  background: rgba(255, 255, 255, 0.96);
+
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
 }
 
 .apple-scanner-logo {
-  color: var(--black);
-  text-decoration: none;
+  color: var(--scanner-black);
 
-  font-size: 17px;
+  font-size: 20px;
+
+  font-weight: 700;
+
   line-height: 1;
-  font-weight: 600;
-  letter-spacing: -0.035em;
+
+  letter-spacing: -0.055em;
+
+  text-decoration: none;
 }
 
 .apple-scanner-logo span {
-  color: var(--muted);
+  color: #777777;
 }
 
-.apple-scanner-links {
+.apple-scanner-nav-right {
   display: flex;
+
   align-items: center;
-  gap: 36px;
+
+  gap: 10px;
 }
 
-.apple-scanner-links a {
-  color: var(--muted);
-  text-decoration: none;
+.apple-gate-pill {
+  min-height: 30px;
 
-  font-size: 15px;
-  line-height: 1;
-  font-weight: 400;
+  padding: 0 12px;
 
-  transition: color 180ms ease;
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  border: 1px solid var(--scanner-border);
+
+  border-radius: 999px;
+
+  background: #ffffff;
+
+  color: #555555;
+
+  font-size: 9px;
+
+  font-weight: 700;
+
+  letter-spacing: 0.12em;
+
+  text-transform: uppercase;
 }
 
-.apple-scanner-links a:hover,
-.apple-scanner-links a.active {
-  color: var(--black);
+.apple-live-pill {
+  min-height: 30px;
+
+  padding: 0 11px;
+
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 7px;
+
+  border: 1px solid var(--scanner-border);
+
+  border-radius: 999px;
+
+  background: #ffffff;
+
+  color: #555555;
+
+  font-size: 9px;
+
+  font-weight: 700;
+
+  letter-spacing: 0.11em;
+
+  text-transform: uppercase;
 }
 
-.apple-scanner-links a.active {
-  font-weight: 600;
+.apple-live-pill::before {
+  content: "";
+
+  width: 6px;
+  height: 6px;
+
+  flex: 0 0 6px;
+
+  border-radius: 50%;
+
+  background: #777777;
 }
 
 /* =========================================================
-   SCANNER MAIN
+   MAIN
    ========================================================= */
 
 .apple-scanner-main {
-  width: min(900px, calc(100% - 48px));
+  position: relative;
 
-  min-height: 0;
+  z-index: 5;
 
-  margin: 0 auto;
-  padding: 28px 0 18px;
+  width: 100%;
 
-  flex: 1 1 auto;
+  min-height: calc(100svh - 76px);
+
+  padding: 70px 24px 110px;
 
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
 
-/* =========================================================
-   HEADING
-   ========================================================= */
+  flex-direction: column;
+
+  align-items: center;
+}
 
 .apple-scanner-heading {
   width: 100%;
 
-  text-align: center;
+  max-width: 720px;
 
-  flex: 0 0 auto;
+  margin: 0 auto 42px;
+
+  text-align: center;
 }
 
 .apple-scanner-eyebrow {
-  width: fit-content;
+  display: inline-flex;
 
-  margin: 0 auto 17px;
-  padding: 4px 7px 5px;
+  align-items: center;
 
-  background: var(--accent);
+  min-height: 28px;
+
+  padding: 0 12px;
+
+  border-radius: 5px;
+
+  background: var(--scanner-lime);
+
   color: #111111;
 
   font-size: 9px;
-  line-height: 1;
+
   font-weight: 800;
-  letter-spacing: 0.15em;
+
+  letter-spacing: 0.16em;
+
+  text-transform: uppercase;
 }
 
 .apple-scanner-heading h1 {
-  margin: 0;
+  margin: 20px 0 0;
 
-  color: var(--black);
+  color: var(--scanner-black);
 
-  font-size: clamp(42px, 5.4vw, 68px);
-  line-height: 0.9;
+  font-size: clamp(42px, 7vw, 76px);
+
   font-weight: 600;
+
+  line-height: 0.94;
+
   letter-spacing: -0.07em;
 }
 
-.apple-scanner-heading h1 span {
-  color: #86868b;
-}
-
 .apple-scanner-heading p {
-  margin: 13px auto 0;
+  max-width: 430px;
 
-  color: var(--muted);
+  margin: 18px auto 0;
 
-  font-size: 13px;
-  line-height: 1.45;
-  letter-spacing: -0.01em;
+  color: var(--scanner-muted);
+
+  font-size: 14px;
+
+  line-height: 1.55;
 }
 
 /* =========================================================
@@ -182,71 +285,76 @@ body:has(.apple-scanner-page) {
    ========================================================= */
 
 .apple-camera-card {
-  width: min(560px, 100%);
+  width: min(100%, 780px);
 
-  margin-top: 22px;
-  padding: 8px;
+  overflow: hidden;
 
-  border: 1px solid #d2d2d7;
-  border-radius: 18px;
+  border: 1px solid var(--scanner-border);
+
+  border-radius: 26px;
 
   background: #ffffff;
 
   box-shadow:
-    0 18px 45px rgba(0, 0, 0, 0.08),
-    0 2px 8px rgba(0, 0, 0, 0.035);
-
-  flex: 0 1 auto;
+    0 1px 2px rgba(0, 0, 0, 0.03),
+    0 12px 40px rgba(0, 0, 0, 0.06);
 }
 
-/* =========================================================
-   CAMERA HEADER
-   ========================================================= */
-
 .apple-camera-topline {
-  height: 31px;
+  min-height: 58px;
 
-  padding: 0 8px;
+  padding: 0 18px;
 
   display: flex;
+
   align-items: center;
+
   justify-content: space-between;
 
-  color: #86868b;
+  border-bottom: 1px solid var(--scanner-border);
 
-  font-size: 8px;
-  line-height: 1;
+  background: #ffffff;
+}
+
+.apple-camera-label {
+  display: flex;
+
+  align-items: center;
+
+  gap: 9px;
+
+  color: #222222;
+
+  font-size: 10px;
+
   font-weight: 700;
-  letter-spacing: 0.1em;
+
+  letter-spacing: 0.12em;
+
   text-transform: uppercase;
 }
 
-.apple-camera-topline span {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
+.apple-camera-label::before {
+  content: "";
 
-.apple-camera-topline svg {
-  width: 13px;
-  height: 13px;
-}
-
-.apple-camera-topline span:last-child i {
-  width: 6px;
-  height: 6px;
-
-  display: inline-block;
+  width: 7px;
+  height: 7px;
 
   border-radius: 50%;
 
-  background: #c7c7cc;
+  background: #111111;
 }
 
-.apple-camera-topline span:last-child.camera-online i {
-  background: var(--green);
+.apple-camera-status {
+  color: #777777;
 
-  box-shadow: 0 0 0 4px rgba(52, 199, 89, 0.11);
+  font-size: 9px;
+
+  font-weight: 700;
+
+  letter-spacing: 0.1em;
+
+  text-transform: uppercase;
 }
 
 /* =========================================================
@@ -257,183 +365,90 @@ body:has(.apple-scanner-page) {
   position: relative;
 
   width: 100%;
-  height: clamp(300px, 42vh, 370px);
 
-  min-height: 270px;
+  min-height: 500px;
 
   overflow: hidden;
 
-  display: grid;
-  place-items: center;
-
-  border-radius: 11px;
-
-  background: #080808;
+  background: #f2f2f2;
 }
 
-.apple-camera-stage::after {
-  content: "";
-
-  position: absolute;
-
-  inset: 0;
-
-  z-index: 3;
-
-  pointer-events: none;
-
-  background: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.025),
-    transparent 25%,
-    transparent 75%,
-    rgba(0, 0, 0, 0.2)
-  );
-}
-
-/* =========================================================
-   HTML5 QR READER
-   ========================================================= */
-
-#qr-reader {
+.apple-qr-reader {
   position: absolute;
 
   inset: 0;
 
   z-index: 1;
 
+  width: 100%;
+
+  height: 100%;
+
+  overflow: hidden;
+
+  background: #eeeeee;
+}
+
+.apple-qr-reader > div {
   width: 100% !important;
+
   height: 100% !important;
 
   border: 0 !important;
-
-  background: #080808;
 }
 
-#qr-reader video {
+.apple-qr-reader video {
+  position: absolute !important;
+
+  inset: 0 !important;
+
   width: 100% !important;
+
   height: 100% !important;
+
+  max-width: none !important;
 
   object-fit: cover !important;
 
-  border-radius: 11px;
-}
-
-#qr-reader__scan_region {
-  width: 100% !important;
-  height: 100% !important;
-
   border: 0 !important;
 }
 
-#qr-reader__scan_region img,
-#qr-reader__dashboard,
-#qr-reader__dashboard_section,
-#qr-reader__header_message {
+#qr-reader__scan_region {
+  position: absolute !important;
+
+  inset: 0 !important;
+
+  width: 100% !important;
+
+  height: 100% !important;
+
+  border: 0 !important;
+
+  overflow: hidden !important;
+}
+
+#qr-reader__scan_region img {
   display: none !important;
 }
 
-/* =========================================================
-   QR FRAME
-   ========================================================= */
-
-.apple-scan-frame {
-  position: absolute;
-
-  z-index: 5;
-
-  width: min(230px, 58vw);
-  height: min(230px, 58vw);
-
-  pointer-events: none;
+#qr-reader__dashboard {
+  display: none !important;
 }
 
-.scan-corner {
-  position: absolute;
-
-  width: 30px;
-  height: 30px;
-
-  border-color: var(--accent);
-
-  filter: drop-shadow(0 0 5px rgba(215, 255, 0, 0.45));
+#qr-reader__dashboard_section {
+  display: none !important;
 }
 
-.scan-corner.tl {
-  top: 0;
-  left: 0;
-
-  border-top: 3px solid;
-  border-left: 3px solid;
-
-  border-radius: 7px 0 0 0;
+#qr-reader__dashboard_section_csr {
+  display: none !important;
 }
 
-.scan-corner.tr {
-  top: 0;
-  right: 0;
-
-  border-top: 3px solid;
-  border-right: 3px solid;
-
-  border-radius: 0 7px 0 0;
+#qr-reader__dashboard_section_swaplink {
+  display: none !important;
 }
 
-.scan-corner.bl {
-  bottom: 0;
-  left: 0;
-
-  border-bottom: 3px solid;
-  border-left: 3px solid;
-
-  border-radius: 0 0 0 7px;
-}
-
-.scan-corner.br {
-  right: 0;
-  bottom: 0;
-
-  border-right: 3px solid;
-  border-bottom: 3px solid;
-
-  border-radius: 0 0 7px 0;
-}
-
-/* =========================================================
-   SCAN LINE
-   ========================================================= */
-
-.apple-scan-line {
-  position: absolute;
-
-  top: 4px;
-  left: 5px;
-  right: 5px;
-
-  height: 2px;
-
-  border-radius: 999px;
-
-  background: var(--accent);
-
-  box-shadow:
-    0 0 8px rgba(215, 255, 0, 0.85),
-    0 0 18px rgba(215, 255, 0, 0.35);
-
-  animation: apple-scan-line 2.1s ease-in-out infinite;
-}
-
-@keyframes apple-scan-line {
-  0%,
-  100% {
-    transform: translateY(0);
-    opacity: 0.45;
-  }
-
-  50% {
-    transform: translateY(218px);
-    opacity: 1;
-  }
+#qr-reader__header_message {
+  display: none !important;
 }
 
 /* =========================================================
@@ -445,122 +460,260 @@ body:has(.apple-scanner-page) {
 
   inset: 0;
 
-  z-index: 4;
+  z-index: 10;
 
   display: flex;
+
   flex-direction: column;
+
   align-items: center;
+
   justify-content: center;
 
-  padding: 20px;
+  padding: 30px;
+
+  background: #f5f5f5;
+
+  color: #222222;
 
   text-align: center;
+}
 
-  pointer-events: none;
+.apple-camera-placeholder.error-state {
+  background: #fafafa;
 }
 
 .apple-camera-icon {
-  width: 48px;
-  height: 48px;
+  width: 62px;
+  height: 62px;
 
-  margin-bottom: 12px;
+  margin-bottom: 20px;
 
   display: grid;
+
   place-items: center;
 
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 14px;
+  border: 1px solid #dddddd;
 
-  background: rgba(255, 255, 255, 0.05);
+  border-radius: 18px;
 
-  color: rgba(255, 255, 255, 0.9);
-}
+  background: #ffffff;
 
-.apple-camera-icon svg {
-  width: 22px;
-  height: 22px;
+  color: #222222;
+
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
 }
 
 .apple-camera-icon.error {
-  color: #ff6961;
+  color: var(--scanner-danger);
 }
 
-.apple-camera-placeholder strong {
-  color: #ffffff;
+.apple-camera-icon svg {
+  width: 28px;
+  height: 28px;
+}
 
-  font-size: 13px;
-  line-height: 1.2;
+.apple-camera-placeholder h2 {
+  margin: 0;
+
+  color: #161616;
+
+  font-size: 20px;
+
   font-weight: 600;
+
+  letter-spacing: -0.04em;
 }
 
-.apple-camera-placeholder span {
-  max-width: 300px;
+.apple-camera-placeholder p {
+  max-width: 360px;
 
-  margin-top: 5px;
+  margin: 9px 0 0;
 
-  color: #929297;
+  color: #777777;
 
-  font-size: 9px;
-  line-height: 1.45;
+  font-size: 12px;
+
+  line-height: 1.55;
 }
 
 /* =========================================================
-   START / NEXT BUTTON
+   START BUTTON
    ========================================================= */
 
-.apple-start-button,
-.apple-next-button {
-  width: 100%;
+.apple-start-button {
+  min-height: 48px;
 
-  min-height: 45px;
+  margin-top: 22px;
 
-  margin-top: 8px;
+  padding: 0 21px;
 
-  padding: 0 18px;
+  display: inline-flex;
 
-  display: flex;
   align-items: center;
+
   justify-content: center;
 
-  gap: 9px;
-
   border: 0;
-  border-radius: 10px;
 
-  background: var(--black);
+  border-radius: 999px;
+
+  background: #111111;
+
   color: #ffffff;
+
+  font-size: 11px;
+
+  font-weight: 700;
+
+  letter-spacing: 0.02em;
 
   cursor: pointer;
 
-  font: inherit;
-
-  font-size: 12px;
-  line-height: 1;
-  font-weight: 500;
-
-  letter-spacing: -0.01em;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
 
   transition:
-    transform 180ms ease,
-    background 180ms ease;
+    transform 160ms ease,
+    background 160ms ease;
 }
 
-.apple-start-button:hover,
-.apple-next-button:hover {
-  background: #333336;
-
-  transform: translateY(-1px);
+.apple-start-button:hover {
+  background: #2a2a2a;
 }
 
-.apple-start-button:active,
-.apple-next-button:active {
-  transform: scale(0.99);
+.apple-start-button:active {
+  transform: scale(0.97);
 }
 
-.apple-start-button svg,
-.apple-next-button svg {
-  width: 15px;
-  height: 15px;
+/* =========================================================
+   SCAN FRAME
+   ========================================================= */
+
+.apple-scan-frame {
+  position: absolute;
+
+  z-index: 5;
+
+  top: 50%;
+  left: 50%;
+
+  width: min(64%, 310px);
+
+  aspect-ratio: 1 / 1;
+
+  transform: translate(-50%, -50%);
+
+  pointer-events: none;
+
+  border: 1px solid rgba(255, 255, 255, 0.72);
+
+  border-radius: 20px;
+
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.16);
+}
+
+.apple-scan-frame.scanning {
+  border-color: rgba(255, 255, 255, 0.92);
+}
+
+.scan-corner {
+  position: absolute;
+
+  width: 30px;
+  height: 30px;
+
+  border-color: #ffffff;
+
+  filter: none;
+}
+
+.scan-corner.tl {
+  top: -2px;
+  left: -2px;
+
+  border-top: 3px solid;
+  border-left: 3px solid;
+
+  border-radius: 8px 0 0 0;
+}
+
+.scan-corner.tr {
+  top: -2px;
+  right: -2px;
+
+  border-top: 3px solid;
+  border-right: 3px solid;
+
+  border-radius: 0 8px 0 0;
+}
+
+.scan-corner.bl {
+  bottom: -2px;
+  left: -2px;
+
+  border-bottom: 3px solid;
+  border-left: 3px solid;
+
+  border-radius: 0 0 0 8px;
+}
+
+.scan-corner.br {
+  right: -2px;
+  bottom: -2px;
+
+  border-right: 3px solid;
+  border-bottom: 3px solid;
+
+  border-radius: 0 0 8px 0;
+}
+
+/* =========================================================
+   SCAN LINE
+   ========================================================= */
+
+.apple-scan-line {
+  position: absolute;
+
+  z-index: 6;
+
+  left: 18px;
+  right: 18px;
+
+  top: 12%;
+
+  height: 1px;
+
+  background: rgba(255, 255, 255, 0.9);
+
+  box-shadow: none;
+
+  opacity: 0;
+
+  transition: opacity 180ms ease;
+
+  animation: cleanScanLine 2.2s ease-in-out infinite;
+}
+
+.apple-scan-frame.scanning .apple-scan-line {
+  opacity: 1;
+}
+
+.apple-scan-glow {
+  display: none;
+}
+
+@keyframes cleanScanLine {
+  0% {
+    top: 12%;
+  }
+
+  50% {
+    top: 88%;
+  }
+
+  100% {
+    top: 12%;
+  }
 }
 
 /* =========================================================
@@ -568,214 +721,60 @@ body:has(.apple-scanner-page) {
    ========================================================= */
 
 .apple-scanning-note {
-  min-height: 27px;
+  width: min(100%, 780px);
 
-  padding: 0 8px;
+  min-height: 58px;
+
+  padding: 0 17px;
 
   display: flex;
+
   align-items: center;
 
-  gap: 7px;
+  justify-content: space-between;
 
-  color: #6e6e73;
+  gap: 20px;
 
-  font-size: 8px;
-  line-height: 1;
+  border-right: 1px solid var(--scanner-border);
 
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  border-bottom: 1px solid var(--scanner-border);
+
+  border-left: 1px solid var(--scanner-border);
+
+  border-radius: 0 0 20px 20px;
+
+  background: #ffffff;
+
+  color: #666666;
+
+  font-size: 10px;
+
+  font-weight: 600;
 }
 
-.apple-scanning-note > i {
+.apple-scanning-note-left {
+  display: flex;
+
+  align-items: center;
+
+  gap: 8px;
+}
+
+.apple-scanning-note-left::before {
+  content: "";
+
   width: 6px;
   height: 6px;
 
   border-radius: 50%;
 
-  background: var(--green);
-
-  box-shadow: 0 0 0 4px rgba(52, 199, 89, 0.1);
+  background: #222222;
 }
 
-.apple-scanning-note > span {
-  margin-left: auto;
-
-  color: #a1a1a6;
-}
-
-/* =========================================================
-   SECURITY NOTE
-   ========================================================= */
-
-.apple-scanner-note {
-  width: min(560px, 100%);
-
-  margin-top: 11px;
-
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  gap: 20px;
-
-  color: #86868b;
-
-  font-size: 8px;
-  line-height: 1.3;
-}
-
-.apple-scanner-note span:first-child {
-  color: #1d1d1f;
-
-  font-weight: 700;
-
-  letter-spacing: 0.12em;
-}
-
-/* =========================================================
-   RESULT PAGE
-   ========================================================= */
-
-.apple-result-main {
-  width: min(760px, calc(100% - 48px));
-
-  min-height: 0;
-
-  margin: 0 auto;
-
-  padding: 25px 0 20px;
-
-  flex: 1 1 auto;
-
-  display: grid;
-  place-items: center;
-}
-
-.apple-result-card {
-  width: min(580px, 100%);
-
-  max-height: calc(100svh - 128px);
-
-  overflow: auto;
-
-  padding: 34px;
-
-  text-align: center;
-
-  border: 1px solid var(--border);
-  border-radius: 18px;
-
-  background: #ffffff;
-
-  box-shadow:
-    0 18px 45px rgba(0, 0, 0, 0.07),
-    0 2px 8px rgba(0, 0, 0, 0.03);
-}
-
-.apple-result-icon {
-  width: 64px;
-  height: 64px;
-
-  margin: 0 auto 17px;
-
-  display: grid;
-  place-items: center;
-
-  border-radius: 50%;
-}
-
-.apple-result-icon svg {
-  width: 27px;
-  height: 27px;
-}
-
-.apple-result-icon.success {
-  background: #f1ffd0;
-  color: #6f8f00;
-}
-
-.apple-result-icon.danger {
-  background: #fff1f0;
-  color: var(--red);
-}
-
-.apple-result-eyebrow {
-  color: #86868b;
+.apple-scanning-gate {
+  color: #999999;
 
   font-size: 9px;
-  line-height: 1;
-
-  font-weight: 800;
-
-  letter-spacing: 0.15em;
-}
-
-.apple-result-card h1 {
-  margin: 11px 0 9px;
-
-  color: var(--black);
-
-  font-size: clamp(42px, 6vw, 60px);
-  line-height: 0.92;
-
-  font-weight: 600;
-
-  letter-spacing: -0.07em;
-}
-
-.apple-result-message {
-  max-width: 390px;
-
-  margin: 0 auto;
-
-  color: var(--muted);
-
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-.apple-result-grid {
-  margin-top: 22px;
-
-  display: grid;
-
-  grid-template-columns: 1fr 1fr;
-
-  overflow: hidden;
-
-  border: 1px solid #e5e5e7;
-  border-radius: 11px;
-
-  background: #fafafa;
-
-  text-align: left;
-}
-
-.apple-result-grid div {
-  min-height: 64px;
-
-  padding: 12px 14px;
-
-  border-bottom: 1px solid #e5e5e7;
-}
-
-.apple-result-grid div:nth-child(odd) {
-  border-right: 1px solid #e5e5e7;
-}
-
-.apple-result-grid div:nth-last-child(-n + 2) {
-  border-bottom: 0;
-}
-
-.apple-result-grid span {
-  display: block;
-
-  margin-bottom: 6px;
-
-  color: #86868b;
-
-  font-size: 8px;
-  line-height: 1;
 
   font-weight: 700;
 
@@ -784,19 +783,320 @@ body:has(.apple-scanner-page) {
   text-transform: uppercase;
 }
 
+/* =========================================================
+   SECURITY STRIP
+   ========================================================= */
+
+.apple-security-strip {
+  width: min(100%, 780px);
+
+  margin-top: 18px;
+
+  padding: 14px 16px;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 13px;
+
+  border: 1px solid var(--scanner-border);
+
+  border-radius: 16px;
+
+  background: #fafafa;
+}
+
+.apple-security-icon {
+  width: 38px;
+  height: 38px;
+
+  flex: 0 0 38px;
+
+  display: grid;
+
+  place-items: center;
+
+  border: 1px solid #e5e5e5;
+
+  border-radius: 11px;
+
+  background: #ffffff;
+
+  color: #333333;
+}
+
+.apple-security-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.apple-security-copy {
+  min-width: 0;
+}
+
+.apple-security-copy strong {
+  display: block;
+
+  color: #222222;
+
+  font-size: 10px;
+
+  font-weight: 700;
+}
+
+.apple-security-copy span {
+  display: block;
+
+  margin-top: 3px;
+
+  color: #888888;
+
+  font-size: 9px;
+
+  line-height: 1.4;
+}
+
+.apple-security-status {
+  margin-left: auto;
+
+  color: #777777;
+
+  font-size: 8px;
+
+  font-weight: 700;
+
+  letter-spacing: 0.1em;
+
+  text-transform: uppercase;
+
+  white-space: nowrap;
+}
+
+/* =========================================================
+   RESULT
+   ========================================================= */
+
+.apple-result-main {
+  position: relative;
+
+  z-index: 5;
+
+  min-height: calc(100svh - 76px);
+
+  padding: 60px 24px 110px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+}
+
+.apple-result-card {
+  width: min(100%, 620px);
+
+  padding: 42px;
+
+  border: 1px solid var(--scanner-border);
+
+  border-radius: 28px;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.03),
+    0 20px 60px rgba(0, 0, 0, 0.07);
+
+  text-align: center;
+}
+
+.apple-result-icon {
+  width: 72px;
+  height: 72px;
+
+  margin: 0 auto 22px;
+
+  display: grid;
+
+  place-items: center;
+
+  border: 1px solid var(--scanner-border);
+
+  border-radius: 22px;
+
+  background: #f7f7f7;
+
+  color: #222222;
+}
+
+.apple-result-icon svg {
+  width: 31px;
+  height: 31px;
+}
+
+.apple-result-icon.success {
+  color: var(--scanner-success);
+
+  background: #f5faf6;
+
+  border-color: #d8eadc;
+}
+
+.apple-result-icon.warning {
+  color: var(--scanner-warning);
+
+  background: #fffaf0;
+
+  border-color: #eee2c6;
+}
+
+.apple-result-icon.danger {
+  color: var(--scanner-danger);
+
+  background: #fff6f6;
+
+  border-color: #efd7d7;
+}
+
+.apple-result-eyebrow {
+  color: #888888;
+
+  font-size: 9px;
+
+  font-weight: 800;
+
+  letter-spacing: 0.16em;
+
+  text-transform: uppercase;
+}
+
+.apple-result-card h1 {
+  margin: 13px 0 0;
+
+  color: #111111;
+
+  font-size: clamp(34px, 6vw, 52px);
+
+  font-weight: 600;
+
+  line-height: 0.98;
+
+  letter-spacing: -0.065em;
+}
+
+.apple-result-message {
+  max-width: 410px;
+
+  margin: 13px auto 0;
+
+  color: #707070;
+
+  font-size: 13px;
+
+  line-height: 1.55;
+}
+
+/* =========================================================
+   RESULT INFORMATION
+   ========================================================= */
+
+.apple-result-grid {
+  margin-top: 32px;
+
+  display: grid;
+
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  gap: 1px;
+
+  overflow: hidden;
+
+  border: 1px solid var(--scanner-border);
+
+  border-radius: 17px;
+
+  background: var(--scanner-border);
+
+  text-align: left;
+}
+
+.apple-result-grid > div {
+  min-height: 72px;
+
+  padding: 15px;
+
+  background: #ffffff;
+}
+
+.apple-result-grid span {
+  display: block;
+
+  color: #999999;
+
+  font-size: 8px;
+
+  font-weight: 700;
+
+  letter-spacing: 0.11em;
+
+  text-transform: uppercase;
+}
+
 .apple-result-grid strong {
   display: block;
 
-  color: var(--black);
+  margin-top: 7px;
+
+  overflow: hidden;
+
+  color: #222222;
 
   font-size: 11px;
-  line-height: 1.35;
 
-  font-weight: 600;
+  font-weight: 650;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
 }
 
+/* =========================================================
+   NEXT BUTTON
+   ========================================================= */
+
 .apple-next-button {
-  margin-top: 14px;
+  width: 100%;
+
+  min-height: 52px;
+
+  margin-top: 18px;
+
+  border: 0;
+
+  border-radius: 999px;
+
+  background: #111111;
+
+  color: #ffffff;
+
+  font-size: 11px;
+
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    transform 160ms ease,
+    background 160ms ease;
+}
+
+.apple-next-button:hover {
+  background: #292929;
+}
+
+.apple-next-button:active {
+  transform: scale(0.98);
 }
 
 /* =========================================================
@@ -804,85 +1104,86 @@ body:has(.apple-scanner-page) {
    ========================================================= */
 
 .apple-scanner-footer {
-  width: min(1200px, calc(100% - 48px));
+  position: relative;
 
-  min-height: 54px;
+  z-index: 5;
 
-  margin: 0 auto;
+  width: 100%;
 
-  padding: 16px 0;
+  padding: 22px 32px max(24px, env(safe-area-inset-bottom));
 
   display: flex;
+
   align-items: center;
+
   justify-content: space-between;
 
-  gap: 20px;
+  border-top: 1px solid var(--scanner-border);
 
-  border-top: 1px solid var(--border);
-
-  color: #86868b;
-
-  font-size: 11px;
-  line-height: 1;
-
-  flex: 0 0 auto;
+  background: #ffffff;
 }
 
-.apple-scanner-footer > span:first-child {
-  color: var(--black);
+.apple-footer-brand {
+  color: #222222;
+
+  font-size: 10px;
+
+  font-weight: 800;
+
+  letter-spacing: -0.02em;
+}
+
+.apple-footer-copy {
+  color: #999999;
+
+  font-size: 8px;
 
   font-weight: 600;
 
-  letter-spacing: -0.03em;
+  letter-spacing: 0.08em;
+
+  text-transform: uppercase;
 }
 
-.apple-scanner-footer > span:first-child > span {
-  color: var(--muted);
+.apple-footer-year {
+  color: #999999;
+
+  font-size: 8px;
+
+  font-weight: 600;
+}
+
+/* =========================================================
+   HOVER / FOCUS
+   ========================================================= */
+
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid #111111;
+
+  outline-offset: 3px;
 }
 
 /* =========================================================
    TABLET
    ========================================================= */
 
-@media (max-width: 760px) {
-  .apple-scanner-nav,
-  .apple-scanner-footer {
-    width: calc(100% - 32px);
+@media (max-width: 900px) {
+  .apple-scanner-nav {
+    padding-left: 22px;
+    padding-right: 22px;
   }
 
   .apple-scanner-main {
-    width: calc(100% - 32px);
-
-    padding-top: 18px;
-    padding-bottom: 12px;
-  }
-
-  .apple-scanner-heading h1 {
-    font-size: clamp(39px, 10vw, 58px);
-  }
-
-  .apple-scanner-heading p {
-    font-size: 12px;
-  }
-
-  .apple-camera-card {
-    margin-top: 17px;
+    padding-top: 55px;
   }
 
   .apple-camera-stage {
-    height: min(44vh, 340px);
+    min-height: 440px;
   }
 
-  .apple-scanner-note {
-    font-size: 7px;
-  }
-
-  .apple-result-main {
-    width: calc(100% - 32px);
-  }
-
-  .apple-result-card {
-    padding: 28px 20px;
+  .apple-scan-frame {
+    width: min(68%, 300px);
   }
 }
 
@@ -890,73 +1191,77 @@ body:has(.apple-scanner-page) {
    MOBILE
    ========================================================= */
 
-@media (max-width: 480px) {
+@media (max-width: 640px) {
   .apple-scanner-nav {
-    width: calc(100% - 28px);
+    min-height: 68px;
 
-    height: 58px;
-    min-height: 58px;
+    padding: max(15px, env(safe-area-inset-top)) 16px 14px;
   }
 
   .apple-scanner-logo {
-    font-size: 15px;
+    font-size: 18px;
   }
 
-  .apple-scanner-links {
-    gap: 17px;
+  .apple-gate-pill {
+    display: none;
   }
 
-  .apple-scanner-links a {
-    font-size: 12px;
-  }
+  .apple-live-pill {
+    min-height: 28px;
 
-  .apple-scanner-main {
-    width: calc(100% - 28px);
-
-    padding-top: 13px;
-  }
-
-  .apple-scanner-eyebrow {
-    margin-bottom: 13px;
+    padding: 0 9px;
 
     font-size: 8px;
   }
 
+  .apple-scanner-main {
+    min-height: calc(100svh - 68px);
+
+    padding: 42px 14px 80px;
+  }
+
+  .apple-scanner-heading {
+    margin-bottom: 30px;
+  }
+
   .apple-scanner-heading h1 {
-    font-size: 40px;
+    margin-top: 17px;
+
+    font-size: clamp(40px, 13vw, 58px);
   }
 
   .apple-scanner-heading p {
-    margin-top: 9px;
+    max-width: 330px;
 
-    font-size: 10px;
+    font-size: 12px;
   }
 
   .apple-camera-card {
-    margin-top: 13px;
-
-    padding: 6px;
-
-    border-radius: 14px;
+    border-radius: 20px;
   }
 
   .apple-camera-topline {
-    height: 27px;
+    min-height: 52px;
 
-    font-size: 7px;
+    padding: 0 14px;
+  }
+
+  .apple-camera-label {
+    font-size: 8px;
+  }
+
+  .apple-camera-status {
+    font-size: 8px;
   }
 
   .apple-camera-stage {
-    height: min(43vh, 285px);
-
-    min-height: 235px;
-
-    border-radius: 9px;
+    min-height: 390px;
   }
 
   .apple-scan-frame {
-    width: 190px;
-    height: 190px;
+    width: 72%;
+
+    border-radius: 17px;
   }
 
   .scan-corner {
@@ -964,167 +1269,113 @@ body:has(.apple-scanner-page) {
     height: 25px;
   }
 
-  @keyframes apple-scan-line {
-    0%,
-    100% {
-      transform: translateY(0);
-    }
-
-    50% {
-      transform: translateY(178px);
-    }
-  }
-
-  .apple-camera-placeholder strong {
-    font-size: 12px;
-  }
-
-  .apple-camera-placeholder span {
-    font-size: 8px;
-  }
-
-  .apple-camera-icon {
-    width: 42px;
-    height: 42px;
-
-    margin-bottom: 9px;
-
-    border-radius: 12px;
-  }
-
-  .apple-start-button,
-  .apple-next-button {
-    min-height: 42px;
-
-    margin-top: 6px;
-
-    font-size: 11px;
-  }
-
   .apple-scanning-note {
-    min-height: 25px;
+    min-height: 52px;
 
-    font-size: 7px;
-  }
+    padding: 0 13px;
 
-  .apple-scanner-note {
-    margin-top: 8px;
-
-    font-size: 6.5px;
-  }
-
-  .apple-scanner-footer {
-    width: calc(100% - 28px);
-
-    min-height: 45px;
-
-    padding: 12px 0;
+    border-radius: 0 0 16px 16px;
 
     font-size: 9px;
   }
 
-  .apple-result-main {
-    width: calc(100% - 28px);
-
-    padding: 14px 0;
+  .apple-scanning-gate {
+    font-size: 8px;
   }
 
-  .apple-result-card {
-    max-height: calc(100svh - 100px);
+  .apple-security-strip {
+    margin-top: 14px;
 
-    padding: 24px 15px 16px;
+    padding: 12px;
 
     border-radius: 14px;
   }
 
-  .apple-result-icon {
-    width: 54px;
-    height: 54px;
+  .apple-security-icon {
+    width: 34px;
+    height: 34px;
 
-    margin-bottom: 13px;
+    flex-basis: 34px;
+  }
+
+  .apple-security-copy span {
+    font-size: 8px;
+  }
+
+  .apple-security-status {
+    display: none;
+  }
+
+  .apple-result-main {
+    min-height: calc(100svh - 68px);
+
+    padding: 40px 14px 80px;
+  }
+
+  .apple-result-card {
+    padding: 30px 18px;
+
+    border-radius: 22px;
+  }
+
+  .apple-result-icon {
+    width: 62px;
+    height: 62px;
+
+    margin-bottom: 18px;
+
+    border-radius: 18px;
+  }
+
+  .apple-result-icon svg {
+    width: 27px;
+    height: 27px;
   }
 
   .apple-result-card h1 {
-    font-size: 42px;
+    font-size: 38px;
   }
 
   .apple-result-message {
-    font-size: 10px;
+    font-size: 12px;
   }
 
   .apple-result-grid {
-    margin-top: 16px;
+    grid-template-columns: 1fr;
   }
 
-  .apple-result-grid div {
-    min-height: 57px;
-
-    padding: 10px;
+  .apple-result-grid > div {
+    min-height: 64px;
   }
 
-  .apple-result-grid span {
-    font-size: 7px;
+  .apple-scanner-footer {
+    padding: 18px 16px max(20px, env(safe-area-inset-bottom));
   }
 
-  .apple-result-grid strong {
-    font-size: 9px;
+  .apple-footer-copy {
+    display: none;
   }
 }
 
 /* =========================================================
-   SHORT DESKTOP HEIGHT
-   Prevent scrolling on smaller MacBook/browser heights.
+   SMALL MOBILE
    ========================================================= */
 
-@media (max-height: 760px) and (min-width: 761px) {
+@media (max-width: 390px) {
   .apple-scanner-main {
-    padding-top: 12px;
-    padding-bottom: 8px;
-  }
-
-  .apple-scanner-eyebrow {
-    margin-bottom: 11px;
-  }
-
-  .apple-scanner-heading h1 {
-    font-size: 48px;
-  }
-
-  .apple-scanner-heading p {
-    margin-top: 8px;
-
-    font-size: 11px;
-  }
-
-  .apple-camera-card {
-    width: 500px;
-
-    margin-top: 12px;
+    padding-top: 34px;
   }
 
   .apple-camera-stage {
-    height: 255px;
-    min-height: 255px;
+    min-height: 350px;
   }
 
   .apple-scan-frame {
-    width: 185px;
-    height: 185px;
+    width: 74%;
   }
 
-  @keyframes apple-scan-line {
-    0%,
-    100% {
-      transform: translateY(0);
-    }
-
-    50% {
-      transform: translateY(173px);
-    }
-  }
-
-  .apple-scanner-note {
-    margin-top: 6px;
+  .apple-scanner-heading h1 {
+    font-size: 38px;
   }
 }
 
@@ -1133,12 +1384,25 @@ body:has(.apple-scanner-page) {
    ========================================================= */
 
 @media (prefers-reduced-motion: reduce) {
-  .apple-scan-line {
-    animation: none;
-  }
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
 
-  .apple-start-button,
-  .apple-next-button {
-    transition: none;
+    animation-duration: 0.01ms !important;
+
+    animation-iteration-count: 1 !important;
+
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* =========================================================
+   SAFETY FALLBACK
+   ========================================================= */
+
+@supports not (backdrop-filter: blur(10px)) {
+  .apple-scanner-nav {
+    background: #ffffff;
   }
 }

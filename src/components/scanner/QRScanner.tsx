@@ -3,14 +3,8 @@
 import "./scanner.css";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-
 import Link from "next/link";
-
 import { Html5Qrcode } from "html5-qrcode";
-
-/* =========================================================
-   TYPES
-   ========================================================= */
 
 type TicketResult = {
   ticketId: string;
@@ -28,23 +22,11 @@ type ScanResponse = {
   ticket?: TicketResult;
 };
 
-/* =========================================================
-   CONSTANTS
-   ========================================================= */
-
 const READER_ID = "qr-reader";
-
-/* =========================================================
-   HELPERS
-   ========================================================= */
 
 function isValidString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
-
-/* =========================================================
-   FORMAT DATE
-   ========================================================= */
 
 function formatDate(value: string | null | undefined): string {
   if (!value) {
@@ -64,10 +46,6 @@ function formatDate(value: string | null | undefined): string {
     timeZone: "Asia/Kolkata",
   }).format(date);
 }
-
-/* =========================================================
-   FORMAT DATE + TIME
-   ========================================================= */
 
 function formatDateTime(value: string | null | undefined): string {
   if (!value) {
@@ -92,10 +70,6 @@ function formatDateTime(value: string | null | undefined): string {
   }).format(date);
 }
 
-/* =========================================================
-   CAMERA ICON
-   ========================================================= */
-
 function CameraIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -111,10 +85,6 @@ function CameraIcon() {
   );
 }
 
-/* =========================================================
-   ARROW ICON
-   ========================================================= */
-
 function ArrowIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -128,10 +98,6 @@ function ArrowIcon() {
     </svg>
   );
 }
-
-/* =========================================================
-   CHECK ICON
-   ========================================================= */
 
 function CheckIcon() {
   return (
@@ -147,10 +113,6 @@ function CheckIcon() {
   );
 }
 
-/* =========================================================
-   CLOSE ICON
-   ========================================================= */
-
 function CloseIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -164,32 +126,43 @@ function CloseIcon() {
   );
 }
 
-/* =========================================================
-   QR SCANNER
-   ========================================================= */
+function ShieldIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M12 3.5 19 6v5.5c0 4.6-2.8 7.8-7 9-4.2-1.2-7-4.4-7-9V6l7-2.5Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+
+      <path
+        d="m8.7 12.1 2.1 2.1 4.5-4.6"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
 export default function QRScanner() {
   const scannerRef = useRef<Html5Qrcode | null>(null);
-
   const processingRef = useRef(false);
-
   const mountedRef = useRef(false);
 
   const [result, setResult] = useState<ScanResponse | null>(null);
-
   const [error, setError] = useState("");
-
   const [isScanning, setIsScanning] = useState(false);
-
-  /* =======================================================
-     STOP SCANNER
-     ======================================================= */
 
   const stopScanner = useCallback(async () => {
     const scanner = scannerRef.current;
 
     if (!scanner) {
-      setIsScanning(false);
+      if (mountedRef.current) {
+        setIsScanning(false);
+      }
 
       return;
     }
@@ -198,92 +171,84 @@ export default function QRScanner() {
       if (scanner.isScanning) {
         await scanner.stop();
       }
-    } catch {
-      /*
-       * Scanner may already be stopped.
-       */
+    } catch (stopError) {
+      console.warn("Scanner stop warning:", stopError);
     }
 
-    setIsScanning(false);
+    scannerRef.current = null;
+
+    if (mountedRef.current) {
+      setIsScanning(false);
+    }
   }, []);
 
-  /* =======================================================
-     HANDLE QR CODE
-     ======================================================= */
+  async function handleQRCode(decodedText: string): Promise<void> {
+    if (processingRef.current) {
+      return;
+    }
 
-  const handleQRCode = useCallback(
-    async (decodedText: string) => {
-      if (processingRef.current) {
-        return;
-      }
+    processingRef.current = true;
 
-      processingRef.current = true;
+    await stopScanner();
 
-      /*
-       * Stop camera immediately after
-       * detecting a QR code.
-       */
+    const qrToken = decodedText.trim();
 
-      await stopScanner();
-
-      /*
-       * IMPORTANT:
-       *
-       * The QR contains ONLY qr_token.
-       *
-       * Do NOT JSON.parse(decodedText).
-       */
-
-      const qrToken = decodedText.trim();
-
-      if (!isValidString(qrToken)) {
+    if (!isValidString(qrToken)) {
+      if (mountedRef.current) {
         setResult({
           success: false,
           valid: false,
           status: "INVALID",
           message: "This QR code is not a valid EntryPass ticket.",
         });
-
-        processingRef.current = false;
-
-        return;
       }
 
+      processingRef.current = false;
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/tickets/scan", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          qrToken,
+        }),
+      });
+
+      let data: ScanResponse;
+
       try {
-        const response = await fetch("/api/tickets/scan", {
-          method: "POST",
+        data = (await response.json()) as ScanResponse;
+      } catch {
+        data = {
+          success: false,
+          valid: false,
+          status: "ERROR",
+          message: "The ticket server returned an invalid response.",
+        };
+      }
 
-          headers: {
-            "Content-Type": "application/json",
-          },
-
-          body: JSON.stringify({
-            qrToken,
-          }),
-        });
-
-        const data = (await response.json()) as ScanResponse;
-
+      if (mountedRef.current) {
         setResult(data);
-      } catch (scanError) {
-        console.error("Ticket scan error:", scanError);
+      }
+    } catch (scanError) {
+      console.error("Ticket scan error:", scanError);
 
+      if (mountedRef.current) {
         setResult({
           success: false,
           valid: false,
           status: "ERROR",
           message: "Unable to connect to the ticket server.",
         });
-      } finally {
-        processingRef.current = false;
       }
-    },
-    [stopScanner],
-  );
-
-  /* =======================================================
-     START SCANNER
-     ======================================================= */
+    } finally {
+      processingRef.current = false;
+    }
+  }
 
   const startScanner = useCallback(async () => {
     if (isScanning || processingRef.current) {
@@ -293,6 +258,20 @@ export default function QRScanner() {
     setError("");
 
     try {
+      const existingScanner = scannerRef.current;
+
+      if (existingScanner?.isScanning) {
+        return;
+      }
+
+      const readerElement = document.getElementById(READER_ID);
+
+      if (!readerElement) {
+        throw new Error("QR reader element was not found.");
+      }
+
+      readerElement.innerHTML = "";
+
       const scanner = new Html5Qrcode(READER_ID);
 
       scannerRef.current = scanner;
@@ -301,27 +280,20 @@ export default function QRScanner() {
         {
           facingMode: "environment",
         },
-
         {
           fps: 10,
-
           qrbox: {
-            width: 220,
-            height: 220,
+            width: 240,
+            height: 240,
           },
-
           aspectRatio: 1,
+          disableFlip: false,
         },
-
         (decodedText) => {
           void handleQRCode(decodedText);
         },
-
         () => {
-          /*
-           * Ignore normal QR
-           * decode misses.
-           */
+          // Normal continuous decode misses are intentionally ignored.
         },
       );
 
@@ -331,17 +303,16 @@ export default function QRScanner() {
     } catch (scannerError) {
       console.error("Camera error:", scannerError);
 
-      setError(
-        "Camera access is unavailable. Allow camera permission and try again.",
-      );
+      scannerRef.current = null;
 
-      setIsScanning(false);
+      if (mountedRef.current) {
+        setIsScanning(false);
+        setError(
+          "Camera access is unavailable. Allow camera permission and try again.",
+        );
+      }
     }
-  }, [handleQRCode, isScanning]);
-
-  /* =======================================================
-     CLEANUP
-     ======================================================= */
+  }, [isScanning, stopScanner]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -351,49 +322,45 @@ export default function QRScanner() {
 
       const scanner = scannerRef.current;
 
-      if (scanner && scanner.isScanning) {
+      if (scanner?.isScanning) {
         void scanner.stop();
       }
+
+      scannerRef.current = null;
     };
   }, []);
 
-  /* =======================================================
-     SCAN AGAIN
-     ======================================================= */
-
-  const scanAgain = async () => {
+  const scanAgain = useCallback(async () => {
     await stopScanner();
 
     processingRef.current = false;
 
-    setResult(null);
-
-    setError("");
+    if (mountedRef.current) {
+      setResult(null);
+      setError("");
+    }
 
     window.setTimeout(() => {
       if (mountedRef.current) {
         void startScanner();
       }
-    }, 100);
-  };
+    }, 150);
+  }, [startScanner, stopScanner]);
 
-  /* =======================================================
-     RESULT STATES
-     ======================================================= */
-
-  const isValid = result?.success === true && result?.valid === true;
+  const isValid =
+    result?.success === true &&
+    result?.valid === true &&
+    result?.status === "USED";
 
   const isUsed = result?.status === "USED" && !isValid;
 
-  /* =======================================================
-     UI
-     ======================================================= */
-
   return (
     <main className="apple-scanner-page">
-      {/* ===================================================
-          HEADER
-      =================================================== */}
+      <div className="apple-scanner-background" aria-hidden="true">
+        <div className="apple-background-grid" />
+        <div className="apple-background-glow apple-background-glow-one" />
+        <div className="apple-background-glow apple-background-glow-two" />
+      </div>
 
       <header className="apple-scanner-nav">
         <Link
@@ -404,21 +371,26 @@ export default function QRScanner() {
           ENTRY<span>PASS</span>
         </Link>
 
-        <nav className="apple-scanner-links" aria-label="Main navigation">
-          <Link href="/admin/scanner" className="active">
-            Scanner
-          </Link>
-        </nav>
-      </header>
+        <div className="apple-scanner-nav-right">
+          <span className="apple-gate-pill">
+            <i />
+            GATE 01
+          </span>
 
-      {/* ===================================================
-          SCANNER
-      =================================================== */}
+          <span className="apple-live-pill">
+            <i />
+            {isScanning ? "LIVE" : "READY"}
+          </span>
+        </div>
+      </header>
 
       {!result ? (
         <section className="apple-scanner-main">
           <div className="apple-scanner-heading">
-            <div className="apple-scanner-eyebrow">EVENT ACCESS</div>
+            <div className="apple-scanner-eyebrow">
+              <span />
+              EVENT ACCESS
+            </div>
 
             <h1>
               Scan. Verify.
@@ -431,28 +403,37 @@ export default function QRScanner() {
 
           <div className="apple-camera-card">
             <div className="apple-camera-topline">
-              <span>
+              <div className="apple-camera-label">
                 <CameraIcon />
-                Camera
-              </span>
+                <span>Ticket scanner</span>
+              </div>
 
-              <span className={isScanning ? "camera-online" : ""}>
+              <div
+                className={`apple-camera-status ${isScanning ? "active" : ""}`}
+              >
                 <i />
-
                 {isScanning ? "Camera active" : "Camera ready"}
-              </span>
+              </div>
             </div>
 
             <div className="apple-camera-stage">
-              <div id={READER_ID} />
+              <div id={READER_ID} className="apple-qr-reader" />
 
-              <div className="apple-scan-frame" aria-hidden="true">
+              <div
+                className={`apple-scan-frame ${isScanning ? "scanning" : ""}`}
+                aria-hidden="true"
+              >
                 <span className="scan-corner tl" />
                 <span className="scan-corner tr" />
                 <span className="scan-corner bl" />
                 <span className="scan-corner br" />
 
-                {isScanning && <span className="apple-scan-line" />}
+                {isScanning && (
+                  <>
+                    <span className="apple-scan-line" />
+                    <span className="apple-scan-glow" />
+                  </>
+                )}
               </div>
 
               {!isScanning && !error && (
@@ -468,7 +449,7 @@ export default function QRScanner() {
               )}
 
               {error && (
-                <div className="apple-camera-placeholder">
+                <div className="apple-camera-placeholder error-state">
                   <div className="apple-camera-icon error">
                     <CloseIcon />
                   </div>
@@ -486,7 +467,7 @@ export default function QRScanner() {
                 className="apple-start-button"
                 onClick={() => void startScanner()}
               >
-                Start camera
+                <span>Start camera</span>
                 <ArrowIcon />
               </button>
             )}
@@ -497,35 +478,48 @@ export default function QRScanner() {
                 className="apple-start-button"
                 onClick={() => void startScanner()}
               >
-                Try again
+                <span>Try again</span>
                 <ArrowIcon />
               </button>
             )}
 
             {isScanning && (
               <div className="apple-scanning-note">
-                <i />
-                Scanning for a ticket
-                <span>Gate 01</span>
+                <div className="apple-scanning-note-left">
+                  <i />
+                  <span>Scanning for a ticket</span>
+                </div>
+
+                <span className="apple-scanning-gate">Gate 01</span>
               </div>
             )}
           </div>
 
-          <div className="apple-scanner-note">
-            <span>SECURE ENTRY</span>
+          <div className="apple-security-strip">
+            <div className="apple-security-icon">
+              <ShieldIcon />
+            </div>
 
-            <span>Each ticket can only be accepted once.</span>
+            <div className="apple-security-copy">
+              <strong>Secure entry validation</strong>
+
+              <span>Each ticket can only be accepted once.</span>
+            </div>
+
+            <span className="apple-security-status">Protected</span>
           </div>
         </section>
       ) : (
-        /* =================================================
-           RESULT
-        ================================================= */
-
         <section className="apple-result-main">
-          <div className={`apple-result-card ${isValid ? "valid" : "invalid"}`}>
+          <div
+            className={`apple-result-card ${
+              isValid ? "valid" : isUsed ? "used" : "invalid"
+            }`}
+          >
             <div
-              className={`apple-result-icon ${isValid ? "success" : "danger"}`}
+              className={`apple-result-icon ${
+                isValid ? "success" : isUsed ? "warning" : "danger"
+              }`}
             >
               {isValid ? <CheckIcon /> : <CloseIcon />}
             </div>
@@ -550,35 +544,27 @@ export default function QRScanner() {
               <div className="apple-result-grid">
                 <div>
                   <span>Ticket ID</span>
-
                   <strong>{result.ticket.ticketId}</strong>
                 </div>
 
                 <div>
                   <span>Ticket type</span>
-
                   <strong>{result.ticket.ticketType}</strong>
                 </div>
 
                 <div>
                   <span>Date</span>
-
                   <strong>{formatDate(result.ticket.date)}</strong>
                 </div>
 
                 <div>
                   <span>Venue</span>
-
                   <strong>{result.ticket.venue}</strong>
                 </div>
 
-                {/* =========================================
-                    SCANNED AT
-                ========================================= */}
-
                 {result.ticket.scannedAt && (
                   <div>
-                    <span>Scanned at</span>
+                    <span>{isValid ? "Scanned at" : "Previously scanned"}</span>
 
                     <strong>{formatDateTime(result.ticket.scannedAt)}</strong>
                   </div>
@@ -591,23 +577,21 @@ export default function QRScanner() {
               className="apple-next-button"
               onClick={() => void scanAgain()}
             >
-              Scan next ticket
+              <span>Scan next ticket</span>
               <ArrowIcon />
             </button>
           </div>
         </section>
       )}
 
-      {/* ===================================================
-          FOOTER
-      =================================================== */}
-
       <footer className="apple-scanner-footer">
-        <span>
+        <span className="apple-footer-brand">
           ENTRY<span>PASS</span>
         </span>
 
-        <span>Made by, Anirudh Sonawane</span>
+        <span className="apple-footer-copy">Secure event access system</span>
+
+        <span className="apple-footer-year">2026</span>
       </footer>
     </main>
   );
