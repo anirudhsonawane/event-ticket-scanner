@@ -3,8 +3,10 @@
 import "./scanner.css";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+
 import Link from "next/link";
-import { Html5Qrcode } from "html5-qrcode";
+
+import { useScanner } from "qrcode-decode-ultra-react";
 
 type TicketResult = {
   ticketId: string;
@@ -22,118 +24,7 @@ type ScanResponse = {
   ticket?: TicketResult;
 };
 
-type CameraDevice = {
-  id: string;
-  label: string;
-};
-
-const READER_ID = "qr-reader";
 const GATE = "Gate 01";
-
-/* =========================================================
-   HELPERS
-   ========================================================= */
-
-function isValidString(value: unknown): value is string {
-  return typeof value === "string" && value.trim().length > 0;
-}
-
-function formatDate(value: string | null | undefined): string {
-  if (!value) {
-    return "—";
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "—";
-  }
-
-  return new Intl.DateTimeFormat("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    timeZone: "Asia/Kolkata",
-  }).format(date);
-}
-
-function formatDateTime(value: string | null | undefined): string {
-  if (!value) {
-    return "—";
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "—";
-  }
-
-  return new Intl.DateTimeFormat("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: true,
-    timeZone: "Asia/Kolkata",
-  }).format(date);
-}
-
-function formatCameraError(error: unknown): string {
-  if (error instanceof DOMException) {
-    switch (error.name) {
-      case "NotAllowedError":
-        return "Camera permission was denied. Please allow camera access and try again.";
-
-      case "PermissionDeniedError":
-        return "Camera permission was denied. Please allow camera access and try again.";
-
-      case "NotFoundError":
-        return "No camera was found on this device.";
-
-      case "NotReadableError":
-        return "The camera is already being used by another application.";
-
-      case "OverconstrainedError":
-        return "The requested camera is not available on this device.";
-
-      case "SecurityError":
-        return "Camera access is blocked by the browser security settings.";
-
-      case "AbortError":
-        return "Camera startup was interrupted. Please try again.";
-
-      default:
-        return error.message || "Unable to start the camera.";
-    }
-  }
-
-  if (error instanceof Error) {
-    return error.message || "Unable to start the camera.";
-  }
-
-  if (typeof error === "string") {
-    return error;
-  }
-
-  if (error && typeof error === "object") {
-    const possibleError = error as {
-      message?: unknown;
-      name?: unknown;
-    };
-
-    if (typeof possibleError.message === "string") {
-      return possibleError.message;
-    }
-
-    if (typeof possibleError.name === "string") {
-      return possibleError.name;
-    }
-  }
-
-  return "Unable to start the camera. Please try again.";
-}
 
 /* =========================================================
    ICONS
@@ -217,292 +108,259 @@ function ShieldIcon() {
 }
 
 /* =========================================================
+   HELPERS
+   ========================================================= */
+
+function isValidString(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function formatDate(value: string | null | undefined): string {
+  if (!value) {
+    return "—";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "—";
+  }
+
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    timeZone: "Asia/Kolkata",
+  }).format(date);
+}
+
+function formatDateTime(value: string | null | undefined): string {
+  if (!value) {
+    return "—";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "—";
+  }
+
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+    timeZone: "Asia/Kolkata",
+  }).format(date);
+}
+
+function formatCameraError(error: unknown): string {
+  if (error instanceof DOMException) {
+    switch (error.name) {
+      case "NotAllowedError":
+      case "PermissionDeniedError":
+        return "Camera permission was denied. Please allow camera access and try again.";
+
+      case "NotFoundError":
+        return "No camera was found on this device.";
+
+      case "NotReadableError":
+        return "The camera is already being used by another application.";
+
+      case "OverconstrainedError":
+        return "The requested camera is not available on this device.";
+
+      case "SecurityError":
+        return "Camera access is blocked by the browser security settings.";
+
+      case "AbortError":
+        return "Camera startup was interrupted. Please try again.";
+
+      default:
+        return error.message || "Unable to start the camera.";
+    }
+  }
+
+  if (error instanceof Error) {
+    return error.message || "Unable to start the camera.";
+  }
+
+  if (typeof error === "string") {
+    return error;
+  }
+
+  if (error && typeof error === "object") {
+    const possibleError = error as {
+      message?: unknown;
+      name?: unknown;
+    };
+
+    if (typeof possibleError.message === "string") {
+      return possibleError.message;
+    }
+
+    if (typeof possibleError.name === "string") {
+      return possibleError.name;
+    }
+  }
+
+  return "Unable to start the camera. Please try again.";
+}
+
+/* =========================================================
    COMPONENT
    ========================================================= */
 
 export default function QRScanner() {
-  const scannerRef = useRef<Html5Qrcode | null>(null);
-
+  /*
+   * Prevent duplicate validation requests.
+   */
   const processingRef = useRef(false);
 
+  /*
+   * React lifecycle.
+   */
   const mountedRef = useRef(false);
 
+  /*
+   * Prevent multiple Start Camera clicks
+   * while the camera is opening.
+   */
   const startingRef = useRef(false);
+
+  /*
+   * Last decoded value.
+   *
+   * We only use this as a simple string lock.
+   * No performance.now(), Date.now(), timers,
+   * or other impure functions are used.
+   */
+  const lastTokenRef = useRef("");
 
   const [result, setResult] = useState<ScanResponse | null>(null);
 
   const [error, setError] = useState("");
 
-  const [isScanning, setIsScanning] = useState(false);
+  const [isStarting, setIsStarting] = useState(false);
 
-  /* =======================================================
-     STOP SCANNER
-     ======================================================= */
+  /*
+   * =======================================================
+   * SCANNER
+   * =======================================================
+   *
+   * Important:
+   *
+   * - QR only
+   * - fast engine
+   * - Web Worker
+   * - rear/environment camera
+   * - one successful QR per session
+   * - no diagnostics callback
+   * - no performance.now()
+   */
 
-  const stopScanner = useCallback(async () => {
-    const scanner = scannerRef.current;
+  const {
+    videoRef,
+    status: scannerStatus,
+    start: startCamera,
+    stop: stopCamera,
+  } = useScanner({
+    engines: "fast",
 
-    if (!scanner) {
-      if (mountedRef.current) {
-        setIsScanning(false);
-      }
+    formats: ["qr_code"],
 
-      return;
-    }
+    worker: true,
 
-    try {
-      if (scanner.isScanning) {
-        await scanner.stop();
-      }
-    } catch (stopError) {
-      console.warn("Scanner stop warning:", stopError);
-    }
+    maxScansPerSecond: 30,
 
-    try {
-      const reader = document.getElementById(READER_ID);
+    maxCodesPerFrame: 1,
 
-      if (reader) {
-        reader.innerHTML = "";
-      }
-    } catch {
-      // Ignore cleanup errors.
-    }
+    facingMode: "environment",
 
-    scannerRef.current = null;
+    once: true,
 
-    if (mountedRef.current) {
-      setIsScanning(false);
-    }
-  }, []);
+    autoStart: false,
 
-  /* =======================================================
-     HANDLE QR
-     ======================================================= */
-
-  async function handleQRCode(decodedText: string): Promise<void> {
-    if (processingRef.current) {
-      return;
-    }
-
-    processingRef.current = true;
-
-    await stopScanner();
-
-    const qrToken = decodedText.trim();
-
-    if (!isValidString(qrToken)) {
-      if (mountedRef.current) {
-        setResult({
-          success: false,
-          valid: false,
-          status: "INVALID",
-          message: "This QR code is not a valid EntryPass ticket.",
-        });
-      }
-
-      processingRef.current = false;
-
-      return;
-    }
-
-    try {
-      const response = await fetch("/api/tickets/scan", {
-        method: "POST",
-
-        headers: {
-          "Content-Type": "application/json",
-        },
-
-        body: JSON.stringify({
-          qrToken,
-        }),
-      });
-
-      let data: ScanResponse;
-
-      try {
-        data = (await response.json()) as ScanResponse;
-      } catch {
-        data = {
-          success: false,
-          valid: false,
-          status: "ERROR",
-          message: "The ticket server returned an invalid response.",
-        };
-      }
-
-      if (mountedRef.current) {
-        setResult(data);
-      }
-    } catch (scanError) {
-      console.error("Ticket scan error:", scanError);
-
-      if (mountedRef.current) {
-        setResult({
-          success: false,
-          valid: false,
-          status: "ERROR",
-          message: "Unable to connect to the ticket server.",
-        });
-      }
-    } finally {
-      processingRef.current = false;
-    }
-  }
-
-  /* =======================================================
-     GET AVAILABLE CAMERAS
-     ======================================================= */
-
-  const getBestCamera = useCallback(async (): Promise<CameraDevice> => {
-    const cameras = await Html5Qrcode.getCameras();
-
-    if (!cameras || cameras.length === 0) {
-      throw new Error("No camera was detected on this device.");
-    }
-
-    console.log("Available cameras:", cameras);
-
-    /*
-     * Prefer a rear camera when
-     * the device exposes one.
-     */
-
-    const rearCamera = cameras.find((camera) => {
-      const label = camera.label.toLowerCase();
-
-      return (
-        label.includes("back") ||
-        label.includes("rear") ||
-        label.includes("environment")
-      );
-    });
-
-    if (rearCamera) {
-      return rearCamera;
-    }
-
-    /*
-     * Mac normally reaches this point
-     * and uses the available FaceTime
-     * camera.
-     */
-
-    return cameras[0];
-  }, []);
-
-  /* =======================================================
-     START SCANNER
-     ======================================================= */
-
-  const startScanner = useCallback(async () => {
-    if (startingRef.current || isScanning || processingRef.current) {
-      return;
-    }
-
-    startingRef.current = true;
-
-    setError("");
-
-    try {
+    onResult: (scan) => {
       /*
-       * Clean up anything from a
-       * previous scanner instance.
+       * Once a scan is being processed,
+       * ignore anything else.
        */
-
-      await stopScanner();
-
-      const reader = document.getElementById(READER_ID);
-
-      if (!reader) {
-        throw new Error("QR scanner container was not found.");
-      }
-
-      reader.innerHTML = "";
-
-      /*
-       * Ask browser/library for cameras.
-       *
-       * This is the important change.
-       */
-
-      const camera = await getBestCamera();
-
-      console.log("Selected camera:", camera);
-
-      /*
-       * Create fresh scanner.
-       */
-
-      const scanner = new Html5Qrcode(READER_ID);
-
-      scannerRef.current = scanner;
-
-      /*
-       * Start using actual camera ID.
-       *
-       * NO formatsToSupport.
-       * NO forced environment mode.
-       */
-
-      await scanner.start(
-        camera.id,
-        {
-          fps: 10,
-
-          qrbox: {
-            width: 220,
-            height: 220,
-          },
-
-          disableFlip: false,
-        },
-        (decodedText) => {
-          void handleQRCode(decodedText);
-        },
-        () => {
-          /*
-           * Ignore continuous
-           * decode misses.
-           */
-        },
-      );
-
-      if (!mountedRef.current) {
+      if (processingRef.current) {
         return;
       }
 
-      setIsScanning(true);
+      const qrToken = typeof scan.value === "string" ? scan.value.trim() : "";
 
-      console.log("QR scanner started successfully.");
-    } catch (scannerError) {
-      console.error("QR scanner start failed:", scannerError);
-
-      try {
-        const scanner = scannerRef.current;
-
-        if (scanner?.isScanning) {
-          await scanner.stop();
-        }
-      } catch {
-        // Ignore cleanup error.
+      if (!isValidString(qrToken)) {
+        return;
       }
 
-      scannerRef.current = null;
+      /*
+       * Simple duplicate protection.
+       *
+       * The scanner itself also uses once:true.
+       */
+      if (qrToken === lastTokenRef.current) {
+        return;
+      }
+
+      lastTokenRef.current = qrToken;
+
+      /*
+       * Useful console information.
+       *
+       * No impure timing function is called.
+       */
+      console.log("QR DETECTED:", qrToken);
+
+      if (scan.engine) {
+        console.log("QR ENGINE:", scan.engine);
+      }
+
+      if (scan.timing) {
+        console.log("QR DECODE:", `${scan.timing.totalMs.toFixed(1)}ms`);
+      }
+
+      /*
+       * Start validation immediately.
+       */
+      void validateTicket(qrToken);
+    },
+
+    onError: (scannerError) => {
+      /*
+       * Do not show camera errors after
+       * a QR has already been detected.
+       */
+      if (processingRef.current) {
+        return;
+      }
+
+      console.error("QR scanner error:", scannerError);
 
       if (mountedRef.current) {
-        setIsScanning(false);
-
         setError(formatCameraError(scannerError));
       }
-    } finally {
-      startingRef.current = false;
-    }
-  }, [getBestCamera, isScanning, stopScanner]);
+    },
+  });
 
-  /* =======================================================
-     LIFECYCLE
-     ======================================================= */
+  /*
+   * =======================================================
+   * SCANNING STATE
+   * =======================================================
+   */
+
+  const isScanning = scannerStatus === "scanning";
+
+  /*
+   * =======================================================
+   * MOUNT / CLEANUP
+   * =======================================================
+   */
 
   useEffect(() => {
     mountedRef.current = true;
@@ -510,40 +368,180 @@ export default function QRScanner() {
     return () => {
       mountedRef.current = false;
 
-      const scanner = scannerRef.current;
+      processingRef.current = false;
 
-      if (scanner?.isScanning) {
-        void scanner.stop();
+      lastTokenRef.current = "";
+
+      /*
+       * Let the scanner binding clean up
+       * its own MediaStream.
+       */
+      void stopCamera();
+    };
+  }, [stopCamera]);
+
+  /*
+   * =======================================================
+   * VALIDATE TICKET
+   * =======================================================
+   */
+
+  const validateTicket = useCallback(
+    async (qrToken: string): Promise<void> => {
+      if (processingRef.current) {
+        return;
       }
 
-      scannerRef.current = null;
-    };
-  }, []);
+      processingRef.current = true;
 
-  /* =======================================================
-     SCAN AGAIN
-     ======================================================= */
+      /*
+       * Stop camera immediately.
+       *
+       * DO NOT await it before the API request.
+       */
+      void stopCamera();
+
+      try {
+        const response = await fetch("/api/tickets/scan", {
+          method: "POST",
+
+          headers: {
+            "Content-Type": "application/json",
+          },
+
+          cache: "no-store",
+
+          body: JSON.stringify({
+            qrToken,
+          }),
+        });
+
+        let data: ScanResponse;
+
+        try {
+          data = (await response.json()) as ScanResponse;
+        } catch {
+          data = {
+            success: false,
+            valid: false,
+            status: "ERROR",
+            message: "The ticket server returned an invalid response.",
+          };
+        }
+
+        if (mountedRef.current) {
+          setResult(data);
+        }
+      } catch (scanError) {
+        console.error("Ticket validation error:", scanError);
+
+        if (mountedRef.current) {
+          setResult({
+            success: false,
+            valid: false,
+            status: "ERROR",
+            message: "Unable to connect to the ticket server.",
+          });
+        }
+      } finally {
+        processingRef.current = false;
+      }
+    },
+    [stopCamera],
+  );
+
+  /*
+   * =======================================================
+   * START CAMERA
+   * =======================================================
+   */
+
+  const startScanner = useCallback(async () => {
+    if (startingRef.current || processingRef.current || isScanning) {
+      return;
+    }
+
+    startingRef.current = true;
+
+    setIsStarting(true);
+
+    setError("");
+
+    /*
+     * Reset QR lock.
+     */
+    lastTokenRef.current = "";
+
+    try {
+      /*
+       * The React scanner binding handles:
+       *
+       * getUserMedia()
+       * camera selection
+       * video stream
+       * decoder startup
+       */
+      await startCamera();
+
+      console.log("Camera started successfully.");
+    } catch (cameraError) {
+      console.error("Camera start failed:", cameraError);
+
+      if (mountedRef.current) {
+        setError(formatCameraError(cameraError));
+      }
+    } finally {
+      startingRef.current = false;
+
+      if (mountedRef.current) {
+        setIsStarting(false);
+      }
+    }
+  }, [isScanning, startCamera]);
+
+  /*
+   * =======================================================
+   * SCAN AGAIN
+   * =======================================================
+   */
 
   const scanAgain = useCallback(async () => {
-    await stopScanner();
+    /*
+     * Stop the previous camera.
+     */
+    try {
+      await stopCamera();
+    } catch {
+      // Ignore cleanup errors.
+    }
 
     processingRef.current = false;
 
+    lastTokenRef.current = "";
+
     if (mountedRef.current) {
       setResult(null);
+
       setError("");
     }
 
+    /*
+     * Give Safari a very small amount
+     * of time to release the previous
+     * MediaStream.
+     */
     window.setTimeout(() => {
       if (mountedRef.current) {
         void startScanner();
       }
-    }, 150);
-  }, [startScanner, stopScanner]);
+    }, 50);
+  }, [startScanner, stopCamera]);
 
-  /* =======================================================
-     RESULT STATES
-     ======================================================= */
+  /*
+   * =======================================================
+   * RESULT STATES
+   * =======================================================
+   */
 
   const isValid =
     result?.success === true &&
@@ -552,9 +550,11 @@ export default function QRScanner() {
 
   const isUsed = result?.status === "USED" && !isValid;
 
-  /* =======================================================
-     RENDER
-     ======================================================= */
+  /*
+   * =======================================================
+   * RENDER
+   * =======================================================
+   */
 
   return (
     <main className="apple-scanner-page">
@@ -564,14 +564,15 @@ export default function QRScanner() {
           className="apple-scanner-logo"
           aria-label="EntryPass home"
         >
-          ENTRY<span>PASS</span>
+          ENTRY
+          <span>PASS</span>
         </Link>
 
         <div className="apple-scanner-nav-right">
           <span className="apple-gate-pill">{GATE}</span>
 
           <span className="apple-live-pill">
-            {isScanning ? "LIVE" : "READY"}
+            {isScanning ? "LIVE" : isStarting ? "STARTING" : "READY"}
           </span>
         </div>
       </header>
@@ -595,26 +596,42 @@ export default function QRScanner() {
               <span className="apple-camera-label">Ticket Scanner</span>
 
               <span className="apple-camera-status">
-                {isScanning ? "Camera active" : "Camera ready"}
+                {isScanning
+                  ? "Camera active"
+                  : isStarting
+                    ? "Opening camera"
+                    : "Camera ready"}
               </span>
             </div>
 
             <div className="apple-camera-stage">
-              <div id={READER_ID} className="apple-qr-reader" />
+              <div className="apple-qr-reader">
+                <video
+                  ref={videoRef}
+                  className="apple-camera-video"
+                  autoPlay
+                  muted
+                  playsInline
+                  aria-label="Ticket scanning camera"
+                />
+              </div>
 
               <div
                 className={`apple-scan-frame ${isScanning ? "scanning" : ""}`}
                 aria-hidden="true"
               >
                 <span className="scan-corner tl" />
+
                 <span className="scan-corner tr" />
+
                 <span className="scan-corner bl" />
+
                 <span className="scan-corner br" />
 
                 {isScanning && <span className="apple-scan-line" />}
               </div>
 
-              {!isScanning && !error && (
+              {!isScanning && !isStarting && !error && (
                 <div className="apple-camera-placeholder">
                   <div className="apple-camera-icon">
                     <CameraIcon />
@@ -623,6 +640,18 @@ export default function QRScanner() {
                   <strong>Camera is ready</strong>
 
                   <span>Start the scanner to activate your camera</span>
+                </div>
+              )}
+
+              {isStarting && (
+                <div className="apple-camera-placeholder">
+                  <div className="apple-camera-icon">
+                    <CameraIcon />
+                  </div>
+
+                  <strong>Opening camera</strong>
+
+                  <span>Please allow camera access if prompted</span>
                 </div>
               )}
 
@@ -639,7 +668,7 @@ export default function QRScanner() {
               )}
             </div>
 
-            {!isScanning && !error && (
+            {!isScanning && !isStarting && !error && (
               <div className="apple-camera-action">
                 <button
                   type="button"
@@ -765,7 +794,8 @@ export default function QRScanner() {
 
       <footer className="apple-scanner-footer">
         <span className="apple-footer-brand">
-          ENTRY<span>PASS</span>
+          ENTRY
+          <span>PASS</span>
         </span>
 
         <span className="apple-footer-copy">Secure event access</span>

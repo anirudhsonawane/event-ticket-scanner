@@ -32,36 +32,51 @@ const PAGE_WIDTH = 595;
 const PAGE_HEIGHT = 842;
 
 /*
- * 3 columns × 3 rows
+ * A4 PORTRAIT
  *
- * This matches the uploaded reference PDF.
+ * 4 columns × 3 rows
+ *
+ * TOTAL:
+ * 12 tickets per page
  */
-const COLUMNS = 3;
+const COLUMNS = 4;
 const ROWS = 3;
 
 const TICKETS_PER_PAGE = COLUMNS * ROWS;
 
 /*
- * Individual ticket/card size.
+ * A4 margins
  */
-const CARD_WIDTH = 170;
-const CARD_HEIGHT = 238;
+const MARGIN_X = 18;
+const MARGIN_Y = 18;
 
 /*
- * Horizontal and vertical gaps.
+ * Space between tickets
  */
-const GAP_X = 14;
-const GAP_Y = 14;
+const GAP_X = 7;
+const GAP_Y = 10;
 
 /*
- * Total grid dimensions.
+ * Calculate card size automatically.
+ *
+ * This makes the layout fit exactly
+ * inside the A4 page.
+ */
+const CARD_WIDTH =
+  (PAGE_WIDTH - MARGIN_X * 2 - GAP_X * (COLUMNS - 1)) / COLUMNS;
+
+const CARD_HEIGHT = (PAGE_HEIGHT - MARGIN_Y * 2 - GAP_Y * (ROWS - 1)) / ROWS;
+
+/*
+ * Grid dimensions
  */
 const GRID_WIDTH = COLUMNS * CARD_WIDTH + (COLUMNS - 1) * GAP_X;
 
 const GRID_HEIGHT = ROWS * CARD_HEIGHT + (ROWS - 1) * GAP_Y;
 
 /*
- * Center the complete grid on A4.
+ * Center the complete grid
+ * horizontally and vertically.
  */
 const GRID_START_X = (PAGE_WIDTH - GRID_WIDTH) / 2;
 
@@ -322,13 +337,6 @@ async function drawTicketCard(
      CARD
      ======================================================= */
 
-  /*
-   * pdf-lib does not provide
-   * drawRoundedRectangle().
-   *
-   * Therefore we use a clean
-   * bordered rectangle.
-   */
   page.drawRectangle({
     x,
     y,
@@ -345,11 +353,19 @@ async function drawTicketCard(
 
   const qrImage = await pdf.embedPng(qrData);
 
-  const qrSize = 128;
+  /*
+   * Scale QR dynamically based
+   * on the new 4-column layout.
+   *
+   * Card width is approximately
+   * 135 points, so 108 gives
+   * comfortable margins.
+   */
+  const qrSize = Math.min(108, CARD_WIDTH - 20);
 
   const qrX = x + (CARD_WIDTH - qrSize) / 2;
 
-  const qrY = y + 78;
+  const qrY = y + CARD_HEIGHT - qrSize - 34;
 
   page.drawImage(qrImage, {
     x: qrX,
@@ -369,8 +385,8 @@ async function drawTicketCard(
     boldFont,
     `GUEST ${guestNumber}`,
     x + CARD_WIDTH / 2,
-    y + 55,
-    12,
+    y + 25,
+    9,
     navyColor,
   );
 
@@ -383,8 +399,8 @@ async function drawTicketCard(
     regularFont,
     "Guest List",
     x + CARD_WIDTH / 2,
-    y + 38,
-    10,
+    y + 13,
+    7.5,
     darkColor,
   );
 
@@ -397,8 +413,8 @@ async function drawTicketCard(
     regularFont,
     getTicketLabel(ticket.ticket_type),
     x + CARD_WIDTH / 2,
-    y + 21,
-    9,
+    y + 3,
+    6.5,
     grayColor,
   );
 }
@@ -421,15 +437,14 @@ async function generatePdf(tickets: TicketRow[]): Promise<Uint8Array> {
    * GUEST 99
    * GUEST 98
    *
-   * appear first, matching
-   * the uploaded reference.
+   * appear first.
    */
   const orderedTickets = [...tickets].reverse();
 
   for (let index = 0; index < orderedTickets.length; index++) {
     /*
      * Add a new A4 page
-     * every 9 tickets.
+     * every 12 tickets.
      */
     if (index % TICKETS_PER_PAGE === 0) {
       pdf.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
@@ -441,23 +456,34 @@ async function generatePdf(tickets: TicketRow[]): Promise<Uint8Array> {
 
     const position = index % TICKETS_PER_PAGE;
 
+    /*
+     * 4 columns.
+     */
     const row = Math.floor(position / COLUMNS);
 
     const column = position % COLUMNS;
 
+    /*
+     * Calculate exact position.
+     */
     const x = GRID_START_X + column * (CARD_WIDTH + GAP_X);
 
     const y = GRID_START_Y - CARD_HEIGHT - row * (CARD_HEIGHT + GAP_Y);
 
     const ticket = orderedTickets[index];
 
+    /* =====================================================
+       QR DATA
+       ===================================================== */
+
     /*
      * IMPORTANT:
      *
-     * The QR contains ONLY
-     * the random qr_token.
+     * QR contains ONLY qr_token.
      *
-     * Nothing else.
+     * No ticket code.
+     * No guest name.
+     * No other information.
      */
     const qrBuffer = await QRCode.toBuffer(ticket.qr_token, {
       type: "png",
@@ -495,7 +521,7 @@ function createPdfResponse(pdf: Uint8Array, filename: string): NextResponse {
       "Content-Type": "application/pdf",
 
       /*
-       * attachment = force download.
+       * Force download.
        */
       "Content-Disposition": `attachment; filename="${filename}"`,
 
@@ -539,9 +565,7 @@ async function generateTicketResponse(
       {
         success: false,
         message: `Unable to prepare ${count} ${type} tickets.`,
-
         requested: count,
-
         available: tickets.length,
       },
       {
@@ -645,7 +669,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json(
       {
         success: false,
-
         message: "Provide a ticket count. Example: ?single=100 or ?couple=100",
       },
       {
@@ -658,7 +681,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json(
       {
         success: false,
-
         message:
           error instanceof Error
             ? error.message

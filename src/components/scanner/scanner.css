@@ -1276,3 +1276,27 @@ a:focus-visible {
     transition-duration: 0.01ms !important;
   }
 }
+
+.apple-camera-stage {
+  position: relative;
+  overflow: hidden;
+}
+
+.apple-qr-reader {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.apple-camera-video {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  background: #000;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  will-change: transform;
+}

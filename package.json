@@ -14,6 +14,8 @@
     "next": "16.3.8",
     "pdf-lib": "^1.17.1",
     "qrcode": "^1.5.4",
+    "qrcode-decode-ultra": "^1.2.0",
+    "qrcode-decode-ultra-react": "^1.1.0",
     "qrcode.react": "^4.2.0",
     "react": "19.2.8",
     "react-dom": "19.2.8"
