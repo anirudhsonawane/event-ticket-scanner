@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
+
 import "./globals.css";
 
 const geistSans = Geist({
@@ -16,6 +17,12 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "EntryPass",
   description: "Event ticket scanning and entry management system",
+
+  icons: {
+    icon: "/favicon.ico?v=2",
+    shortcut: "/favicon.ico?v=2",
+    apple: "/favicon.ico?v=2",
+  },
 };
 
 export default function RootLayout({
