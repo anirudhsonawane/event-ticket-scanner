@@ -541,6 +541,82 @@
 }
 
 /* =========================================================
+   TORCH / FLASHLIGHT
+   ========================================================= */
+
+.apple-torch-button {
+  position: absolute;
+
+  z-index: 12;
+
+  top: 18px;
+  right: 18px;
+
+  min-height: 42px;
+
+  padding: 0 13px;
+
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 7px;
+
+  border: 1px solid rgba(255, 255, 255, 0.28);
+
+  border-radius: 999px;
+
+  background: rgba(17, 17, 17, 0.78);
+
+  color: #ffffff;
+
+  font-size: 9px;
+
+  font-weight: 700;
+
+  letter-spacing: 0.04em;
+
+  cursor: pointer;
+
+  backdrop-filter: blur(12px);
+
+  -webkit-backdrop-filter: blur(12px);
+
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+
+  transition:
+    transform 160ms ease,
+    background 160ms ease,
+    color 160ms ease;
+}
+
+.apple-torch-button:hover {
+  background: rgba(17, 17, 17, 0.92);
+}
+
+.apple-torch-button:active {
+  transform: scale(0.95);
+}
+
+.apple-torch-button.active {
+  background: var(--lime);
+
+  border-color: var(--lime);
+
+  color: #111111;
+}
+
+.apple-torch-button svg {
+  width: 17px;
+
+  height: 17px;
+
+  flex: 0 0 17px;
+}
+
+/* =========================================================
    SCAN FRAME
    ========================================================= */
 
@@ -1201,6 +1277,16 @@ a:focus-visible {
     width: 72%;
 
     border-radius: 17px;
+  }
+
+  .apple-torch-button {
+    top: 12px;
+
+    right: 12px;
+
+    min-height: 40px;
+
+    padding: 0 12px;
   }
 
   .scan-corner {

@@ -45,6 +45,33 @@ function CameraIcon() {
   );
 }
 
+function FlashlightIcon({ active = false }: { active?: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M9 3h6l1 4H8l1-4Z"
+        fill={active ? "currentColor" : "none"}
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M9 7h6v4.5l-1.5 2V21h-3v-7.5L9 11.5V7Z"
+        fill={active ? "currentColor" : "none"}
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M8 3h8"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 function ArrowIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -247,6 +274,16 @@ export default function QRScanner() {
   const [isStarting, setIsStarting] = useState(false);
 
   /*
+   * Torch / flashlight state.
+   *
+   * The torch is controlled through the active camera
+   * MediaStreamTrack. It is supported on many Android
+   * browsers, but not universally on iOS/Safari.
+   */
+  const [isTorchOn, setIsTorchOn] = useState(false);
+  const [torchSupported, setTorchSupported] = useState(false);
+
+  /*
    * =======================================================
    * SCANNER
    * =======================================================
@@ -358,6 +395,84 @@ export default function QRScanner() {
 
   /*
    * =======================================================
+   * TORCH / FLASHLIGHT
+   * =======================================================
+   */
+
+  const getCameraTrack = useCallback((): MediaStreamTrack | null => {
+    const video = videoRef.current;
+
+    if (!(video instanceof HTMLVideoElement)) {
+      return null;
+    }
+
+    const stream = video.srcObject;
+
+    if (!(stream instanceof MediaStream)) {
+      return null;
+    }
+
+    return stream.getVideoTracks()[0] ?? null;
+  }, [videoRef]);
+
+  const updateTorchSupport = useCallback(() => {
+    const track = getCameraTrack();
+
+    if (!track) {
+      setTorchSupported(false);
+      return false;
+    }
+
+    const capabilities = track.getCapabilities?.();
+
+    if (!capabilities || !("torch" in capabilities)) {
+      setTorchSupported(false);
+      return false;
+    }
+
+    setTorchSupported(true);
+    return true;
+  }, [getCameraTrack]);
+
+  const setTorch = useCallback(
+    async (enabled: boolean) => {
+      const track = getCameraTrack();
+
+      if (!track) {
+        setTorchSupported(false);
+        setIsTorchOn(false);
+        return;
+      }
+
+      const capabilities = track.getCapabilities?.();
+
+      if (!capabilities || !("torch" in capabilities)) {
+        setTorchSupported(false);
+        setIsTorchOn(false);
+        return;
+      }
+
+      try {
+        await track.applyConstraints({
+          advanced: [{ torch: enabled } as MediaTrackConstraintSet],
+        });
+
+        setTorchSupported(true);
+        setIsTorchOn(enabled);
+      } catch (torchError) {
+        console.error("Unable to control camera torch:", torchError);
+        setIsTorchOn(false);
+      }
+    },
+    [getCameraTrack],
+  );
+
+  const toggleTorch = useCallback(() => {
+    void setTorch(!isTorchOn);
+  }, [isTorchOn, setTorch]);
+
+  /*
+   * =======================================================
    * MOUNT / CLEANUP
    * =======================================================
    */
@@ -371,6 +486,12 @@ export default function QRScanner() {
       processingRef.current = false;
 
       lastTokenRef.current = "";
+
+      /*
+       * Turn the flashlight off before releasing
+       * the camera stream.
+       */
+      void setTorch(false);
 
       /*
        * Let the scanner binding clean up
@@ -395,10 +516,11 @@ export default function QRScanner() {
       processingRef.current = true;
 
       /*
-       * Stop camera immediately.
+       * Turn the torch off and stop the camera immediately.
        *
-       * DO NOT await it before the API request.
+       * DO NOT await either before the API request.
        */
+      void setTorch(false);
       void stopCamera();
 
       try {
@@ -447,7 +569,7 @@ export default function QRScanner() {
         processingRef.current = false;
       }
     },
-    [stopCamera],
+    [setTorch, stopCamera],
   );
 
   /*
@@ -483,6 +605,13 @@ export default function QRScanner() {
        */
       await startCamera();
 
+      /*
+       * The scanner has now attached its MediaStream
+       * to the video element. Check whether the active
+       * camera exposes torch control.
+       */
+      updateTorchSupport();
+
       console.log("Camera started successfully.");
     } catch (cameraError) {
       console.error("Camera start failed:", cameraError);
@@ -497,7 +626,7 @@ export default function QRScanner() {
         setIsStarting(false);
       }
     }
-  }, [isScanning, startCamera]);
+  }, [isScanning, startCamera, updateTorchSupport]);
 
   /*
    * =======================================================
@@ -510,6 +639,7 @@ export default function QRScanner() {
      * Stop the previous camera.
      */
     try {
+      await setTorch(false);
       await stopCamera();
     } catch {
       // Ignore cleanup errors.
@@ -535,7 +665,7 @@ export default function QRScanner() {
         void startScanner();
       }
     }, 50);
-  }, [startScanner, stopCamera]);
+  }, [setTorch, startScanner, stopCamera]);
 
   /*
    * =======================================================
@@ -615,6 +745,21 @@ export default function QRScanner() {
                   aria-label="Ticket scanning camera"
                 />
               </div>
+
+              {isScanning && torchSupported && (
+                <button
+                  type="button"
+                  className={`apple-torch-button ${isTorchOn ? "active" : ""}`}
+                  onClick={toggleTorch}
+                  aria-label={
+                    isTorchOn ? "Turn flashlight off" : "Turn flashlight on"
+                  }
+                  aria-pressed={isTorchOn}
+                >
+                  <FlashlightIcon active={isTorchOn} />
+                  <span>{isTorchOn ? "Torch on" : "Torch"}</span>
+                </button>
+              )}
 
               <div
                 className={`apple-scan-frame ${isScanning ? "scanning" : ""}`}
@@ -798,9 +943,7 @@ export default function QRScanner() {
           <span>PASS</span>
         </span>
 
-        <span className="apple-footer-copy">Secure event access</span>
-
-        <span className="apple-footer-year">2026</span>
+        <span className="apple-footer-copy">Made by, Anirudh Sonawane</span>
       </footer>
     </main>
   );
