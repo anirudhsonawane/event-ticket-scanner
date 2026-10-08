@@ -134,6 +134,170 @@ function ShieldIcon() {
   );
 }
 
+function NavDurgaMark() {
+  return (
+    <svg
+      className="nd-logo-mark"
+      viewBox="0 0 54 72"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path
+        d="M28 5v61"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+      />
+      <path
+        d="M28 12c-7 1-12 5-15 10 6-2 11-1 15 2"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M29 13c7 0 12 3 16 8-6-1-11 0-16 4"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M11 29c5-8 12-10 18-8 6-2 13 0 18 8-6-4-12-4-18 0-6-4-12-4-18 0Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <circle cx="29" cy="29" r="3.2" fill="currentColor" />
+      <path
+        d="M23 2c2 3 3 5 6 7 2-2 3-4 3-7"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function GateIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M5 20V9l7-5 7 5v11M3 20h18M8 20v-6h8v6"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M10 10h4"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function CalendarIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect
+        x="4"
+        y="5.5"
+        width="16"
+        height="15"
+        rx="2"
+        stroke="currentColor"
+        strokeWidth="1.7"
+      />
+      <path
+        d="M8 3.5v4M16 3.5v4M4 9.5h16"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+      />
+      <path
+        d="M8 13h2M14 13h2M8 16.5h2M14 16.5h2"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function VenueIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M12 21s6-6.1 6-11a6 6 0 1 0-12 0c0 4.9 6 11 6 11Z"
+        stroke="currentColor"
+        strokeWidth="1.7"
+      />
+      <circle cx="12" cy="10" r="2.2" stroke="currentColor" strokeWidth="1.5" />
+    </svg>
+  );
+}
+
+function PeopleIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="9" cy="8" r="3" stroke="currentColor" strokeWidth="1.6" />
+      <circle
+        cx="16.5"
+        cy="9"
+        r="2.4"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      />
+      <path
+        d="M3.5 19c.5-3.5 2.5-5.5 5.5-5.5s5 2 5.5 5.5M14 14.5c3-.2 5.2 1.5 5.8 4.5"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function DandiyaIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="m6 4 14 14M18 4 4 18"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+      />
+      <path
+        d="m5 3 2 2M17 3l-2 2M3 17l2 2M19 17l-2 2"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function QrMiniIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      />
+      <path
+        d="M15 15h2v2h-2zM18 18h2v2h-2zM18 14h2M14 20h2"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 /* =========================================================
    HELPERS
    ========================================================= */
@@ -467,6 +631,30 @@ export default function QRScanner() {
     [getCameraTrack],
   );
 
+  const waitForTorchSupport = useCallback(async () => {
+    /*
+     * Some browsers attach the MediaStream to the video element
+     * slightly after startCamera() resolves. Retry briefly so the
+     * torch button is not hidden because the track was not ready
+     * on the first capability check.
+     */
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+      if (!mountedRef.current) {
+        return false;
+      }
+
+      if (updateTorchSupport()) {
+        return true;
+      }
+
+      await new Promise<void>((resolve) => {
+        window.setTimeout(resolve, 50);
+      });
+    }
+
+    return false;
+  }, [updateTorchSupport]);
+
   const toggleTorch = useCallback(() => {
     void setTorch(!isTorchOn);
   }, [isTorchOn, setTorch]);
@@ -500,6 +688,14 @@ export default function QRScanner() {
       void stopCamera();
     };
   }, [stopCamera]);
+
+  useEffect(() => {
+    if (scannerStatus !== "scanning") {
+      return;
+    }
+
+    void waitForTorchSupport();
+  }, [scannerStatus, waitForTorchSupport]);
 
   /*
    * =======================================================
@@ -606,11 +802,11 @@ export default function QRScanner() {
       await startCamera();
 
       /*
-       * The scanner has now attached its MediaStream
-       * to the video element. Check whether the active
-       * camera exposes torch control.
+       * The scanner has now started the camera. The active
+       * MediaStream may take a moment to become available on
+       * the video element, so wait briefly for torch support.
        */
-      updateTorchSupport();
+      await waitForTorchSupport();
 
       console.log("Camera started successfully.");
     } catch (cameraError) {
@@ -626,7 +822,7 @@ export default function QRScanner() {
         setIsStarting(false);
       }
     }
-  }, [isScanning, startCamera, updateTorchSupport]);
+  }, [isScanning, startCamera, waitForTorchSupport]);
 
   /*
    * =======================================================
@@ -687,238 +883,342 @@ export default function QRScanner() {
    */
 
   return (
-    <main className="apple-scanner-page">
-      <header className="apple-scanner-nav">
-        <Link
-          href="/"
-          className="apple-scanner-logo"
-          aria-label="EntryPass home"
-        >
-          ENTRY
-          <span>PASS</span>
+    <main className="navdurga-scanner-page">
+      <div
+        className="nd-background-art nd-background-art-left"
+        aria-hidden="true"
+      >
+        <span className="nd-mandala nd-mandala-one" />
+        <span className="nd-mandala nd-mandala-two" />
+        <span className="nd-dandiya nd-dandiya-one" />
+      </div>
+
+      <div
+        className="nd-background-art nd-background-art-right"
+        aria-hidden="true"
+      >
+        <span className="nd-mandala nd-mandala-three" />
+        <span className="nd-mandala nd-mandala-four" />
+        <span className="nd-dandiya nd-dandiya-two" />
+      </div>
+
+      <header className="nd-header">
+        <Link href="/" className="nd-brand" aria-label="Nav Durga scanner home">
+          <span className="nd-brand-mark">
+            <NavDurgaMark />
+          </span>
+
+          <span className="nd-brand-wordmark">
+            <span className="nd-brand-nav">NAV</span>
+            <span className="nd-brand-durga">Durga</span>
+            <span className="nd-brand-subtitle">RAAS DANDIYA</span>
+            <span className="nd-brand-year">2026</span>
+          </span>
         </Link>
 
-        <div className="apple-scanner-nav-right">
-          <span className="apple-gate-pill">{GATE}</span>
+        <div className="nd-header-divider" />
 
-          <span className="apple-live-pill">
-            {isScanning ? "LIVE" : isStarting ? "STARTING" : "READY"}
-          </span>
+        <p className="nd-tagline">
+          The Rhythm of Dandiya.
+          <br />
+          The Spirit of Maharashtra.
+        </p>
+
+        <div className="nd-header-spacer" />
+
+        <div className="nd-header-status">
+          <div className="nd-status-pill nd-gate-pill">
+            <GateIcon />
+            <span>{GATE}</span>
+          </div>
+
+          <div className="nd-status-pill nd-live-pill">
+            <span className="nd-live-dot" />
+            <span className="nd-live-copy">
+              <strong>
+                {isScanning ? "LIVE" : isStarting ? "STARTING" : "READY"}
+              </strong>
+              <small>EVENT ACCESS</small>
+            </span>
+          </div>
         </div>
       </header>
 
       {!result ? (
-        <section className="apple-scanner-main">
-          <div className="apple-scanner-heading">
-            <div className="apple-scanner-eyebrow">EVENT ACCESS</div>
-
-            <h1>
-              Scan. Verify.
-              <br />
-              <span>Welcome in.</span>
-            </h1>
-
-            <p>Point the camera at the QR code on the attendee ticket.</p>
-          </div>
-
-          <div className="apple-camera-card">
-            <div className="apple-camera-topline">
-              <span className="apple-camera-label">Ticket Scanner</span>
-
-              <span className="apple-camera-status">
-                {isScanning
-                  ? "Camera active"
-                  : isStarting
-                    ? "Opening camera"
-                    : "Camera ready"}
-              </span>
+        <section className="nd-scanner-main">
+          <div className="nd-heading">
+            <div className="nd-heading-kicker">
+              <span />
+              <strong>SCAN TICKET</strong>
+              <span />
             </div>
 
-            <div className="apple-camera-stage">
-              <div className="apple-qr-reader">
+            <h1>
+              Ready for
+              <br />
+              <em>entry.</em>
+            </h1>
+
+            <p>
+              Point the camera at the QR code
+              <br className="nd-desktop-break" /> on the attendee ticket.
+            </p>
+          </div>
+
+          <div className="nd-camera-wrap">
+            <div className="nd-camera-shell">
+              <div className="nd-camera-stage">
+                <div className="nd-camera-glass" />
+
                 <video
                   ref={videoRef}
-                  className="apple-camera-video"
+                  className="nd-camera-video"
                   autoPlay
                   muted
                   playsInline
                   aria-label="Ticket scanning camera"
                 />
-              </div>
 
-              {isScanning && torchSupported && (
+                <div className="nd-camera-vignette" />
+
+                <div
+                  className={`nd-scan-frame ${isScanning ? "is-scanning" : ""}`}
+                  aria-hidden="true"
+                >
+                  <span className="nd-scan-corner nd-scan-tl" />
+                  <span className="nd-scan-corner nd-scan-tr" />
+                  <span className="nd-scan-corner nd-scan-bl" />
+                  <span className="nd-scan-corner nd-scan-br" />
+
+                  {isScanning && <span className="nd-scan-line" />}
+
+                  {!isScanning && !isStarting && !error && (
+                    <div className="nd-frame-hint">
+                      <QrMiniIcon />
+                      <span>
+                        Position the QR code
+                        <br />
+                        within the frame
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {!isScanning && !isStarting && !error && (
+                  <div className="nd-camera-placeholder">
+                    <span className="nd-placeholder-dot" />
+                    <strong>Camera ready</strong>
+                  </div>
+                )}
+
+                {isStarting && (
+                  <div className="nd-camera-placeholder">
+                    <span className="nd-placeholder-spinner" />
+                    <strong>Opening camera</strong>
+                    <small>Please allow camera access if prompted</small>
+                  </div>
+                )}
+
+                {error && (
+                  <div className="nd-camera-placeholder nd-camera-error">
+                    <span className="nd-error-icon">
+                      <CloseIcon />
+                    </span>
+                    <strong>Camera unavailable</strong>
+                    <small>{error}</small>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="nd-camera-actions">
+              {!isScanning && !isStarting && !error && (
                 <button
                   type="button"
-                  className={`apple-torch-button ${isTorchOn ? "active" : ""}`}
-                  onClick={toggleTorch}
-                  aria-label={
-                    isTorchOn ? "Turn flashlight off" : "Turn flashlight on"
-                  }
-                  aria-pressed={isTorchOn}
+                  className="nd-primary-button"
+                  onClick={() => void startScanner()}
                 >
-                  <FlashlightIcon active={isTorchOn} />
-                  <span>{isTorchOn ? "Torch on" : "Torch"}</span>
+                  <QrMiniIcon />
+                  <span>Start scanner</span>
+                  <ArrowIcon />
                 </button>
-              )}
-
-              <div
-                className={`apple-scan-frame ${isScanning ? "scanning" : ""}`}
-                aria-hidden="true"
-              >
-                <span className="scan-corner tl" />
-
-                <span className="scan-corner tr" />
-
-                <span className="scan-corner bl" />
-
-                <span className="scan-corner br" />
-
-                {isScanning && <span className="apple-scan-line" />}
-              </div>
-
-              {!isScanning && !isStarting && !error && (
-                <div className="apple-camera-placeholder">
-                  <div className="apple-camera-icon">
-                    <CameraIcon />
-                  </div>
-
-                  <strong>Camera is ready</strong>
-
-                  <span>Start the scanner to activate your camera</span>
-                </div>
-              )}
-
-              {isStarting && (
-                <div className="apple-camera-placeholder">
-                  <div className="apple-camera-icon">
-                    <CameraIcon />
-                  </div>
-
-                  <strong>Opening camera</strong>
-
-                  <span>Please allow camera access if prompted</span>
-                </div>
               )}
 
               {error && (
-                <div className="apple-camera-placeholder error-state">
-                  <div className="apple-camera-icon error">
-                    <CloseIcon />
-                  </div>
+                <button
+                  type="button"
+                  className="nd-primary-button"
+                  onClick={() => void startScanner()}
+                >
+                  <CameraIcon />
+                  <span>Try again</span>
+                  <ArrowIcon />
+                </button>
+              )}
 
-                  <strong>Camera unavailable</strong>
-
-                  <span>{error}</span>
+              {isScanning && (
+                <div className="nd-scanning-button-state">
+                  <span className="nd-button-live-dot" />
+                  <span>Scanning ticket</span>
                 </div>
               )}
             </div>
 
-            {!isScanning && !isStarting && !error && (
-              <div className="apple-camera-action">
-                <button
-                  type="button"
-                  className="apple-start-button"
-                  onClick={() => void startScanner()}
-                >
-                  Start camera
-                  <ArrowIcon />
-                </button>
-              </div>
-            )}
-
-            {error && (
-              <div className="apple-camera-action">
-                <button
-                  type="button"
-                  className="apple-start-button"
-                  onClick={() => void startScanner()}
-                >
-                  Try again
-                  <ArrowIcon />
-                </button>
-              </div>
-            )}
-
-            {isScanning && (
-              <div className="apple-scanning-note">
-                <span className="apple-scanning-note-left">
-                  Scanning for a ticket
+            <div className="nd-control-bar">
+              <div className="nd-control-item">
+                <span
+                  className={`nd-control-dot ${
+                    isScanning ? "active" : "ready"
+                  }`}
+                />
+                <span>
+                  {isScanning
+                    ? "Camera active"
+                    : isStarting
+                      ? "Opening camera"
+                      : "Camera ready"}
                 </span>
-
-                <span className="apple-scanning-gate">{GATE}</span>
               </div>
-            )}
+
+              <span className="nd-control-divider" />
+
+              <div
+                className={`nd-control-item nd-torch-control ${
+                  torchSupported ? "" : "unsupported"
+                }`}
+              >
+                <FlashlightIcon active={isTorchOn} />
+
+                <span>{isTorchOn ? "Torch on" : "Torch off"}</span>
+
+                <button
+                  type="button"
+                  className={`nd-torch-switch ${isTorchOn ? "on" : ""}`}
+                  onClick={toggleTorch}
+                  disabled={!isScanning || !torchSupported}
+                  aria-label={
+                    torchSupported
+                      ? isTorchOn
+                        ? "Turn torch off"
+                        : "Turn torch on"
+                      : "Torch is not supported by this camera"
+                  }
+                  aria-pressed={isTorchOn}
+                  title={
+                    torchSupported
+                      ? isTorchOn
+                        ? "Turn torch off"
+                        : "Turn torch on"
+                      : "Torch unavailable on this device"
+                  }
+                >
+                  <span />
+                </button>
+              </div>
+            </div>
           </div>
 
-          <div className="apple-security-strip">
-            <div className="apple-security-icon">
-              <ShieldIcon />
+          <div className="nd-ornament-divider" aria-hidden="true">
+            <span />
+            <i />
+            <span />
+          </div>
+
+          <div className="nd-event-info">
+            <div className="nd-info-item">
+              <span className="nd-info-icon">
+                <CalendarIcon />
+              </span>
+              <div>
+                <strong>13 OCT – 19 OCT 2026</strong>
+                <small>7 Days Celebration</small>
+              </div>
             </div>
 
-            <div className="apple-security-copy">
-              <strong>Secure entry validation</strong>
+            <div className="nd-info-separator" />
 
-              <span>Each ticket can only be accepted once.</span>
+            <div className="nd-info-item nd-venue-item">
+              <span className="nd-info-icon">
+                <VenueIcon />
+              </span>
+              <div>
+                <strong>Gurukul Olympiad School</strong>
+                <small>Chhatrapati Sambhajinagar, Maharashtra 431010</small>
+              </div>
             </div>
 
-            <span className="apple-security-status">Protected</span>
+            <div className="nd-info-separator" />
+
+            <div className="nd-info-item">
+              <span className="nd-info-icon">
+                <PeopleIcon />
+              </span>
+              <div>
+                <strong>5K+</strong>
+                <small>People Per Day</small>
+              </div>
+            </div>
+          </div>
+
+          <div className="nd-security-line">
+            <ShieldIcon />
+            <span>Secure entry validation</span>
+            <i />
+            <span>Each ticket can only be accepted once.</span>
           </div>
         </section>
       ) : (
-        <section className="apple-result-main">
-          <div className={`apple-result-card ${isValid ? "valid" : "invalid"}`}>
-            <div
-              className={`apple-result-icon ${isValid ? "success" : "danger"}`}
-            >
-              {isValid ? <CheckIcon /> : <CloseIcon />}
-            </div>
+        <section className="nd-result-main">
+          <div className={`nd-result-card ${isValid ? "valid" : "invalid"}`}>
+            <div className="nd-result-top">
+              <span
+                className={`nd-result-icon ${isValid ? "success" : "danger"}`}
+              >
+                {isValid ? <CheckIcon /> : <CloseIcon />}
+              </span>
 
-            <div className="apple-result-eyebrow">
-              {isValid
-                ? "TICKET VERIFIED"
-                : isUsed
-                  ? "SECURITY CHECK"
-                  : "TICKET REJECTED"}
+              <span className="nd-result-kicker">
+                {isValid
+                  ? "TICKET VERIFIED"
+                  : isUsed
+                    ? "SECURITY CHECK"
+                    : "TICKET REJECTED"}
+              </span>
             </div>
 
             <h1>{isValid ? "Entry valid." : "Entry denied."}</h1>
 
-            <p className="apple-result-message">
+            <p className="nd-result-message">
               {isValid
                 ? "Ticket accepted. Entry has been recorded."
                 : result.message}
             </p>
 
             {result.ticket && (
-              <div className="apple-result-grid">
+              <div className="nd-result-grid">
                 <div>
                   <span>Ticket ID</span>
-
                   <strong>{result.ticket.ticketId}</strong>
                 </div>
 
                 <div>
                   <span>Ticket type</span>
-
                   <strong>{result.ticket.ticketType}</strong>
                 </div>
 
                 <div>
                   <span>Date</span>
-
                   <strong>{formatDate(result.ticket.date)}</strong>
                 </div>
 
                 <div>
                   <span>Venue</span>
-
                   <strong>{result.ticket.venue}</strong>
                 </div>
 
                 {result.ticket.scannedAt && (
                   <div>
                     <span>{isValid ? "Scanned at" : "Previously scanned"}</span>
-
                     <strong>{formatDateTime(result.ticket.scannedAt)}</strong>
                   </div>
                 )}
@@ -927,23 +1227,25 @@ export default function QRScanner() {
 
             <button
               type="button"
-              className="apple-next-button"
+              className="nd-next-button"
               onClick={() => void scanAgain()}
             >
-              Scan next ticket
+              <QrMiniIcon />
+              <span>Scan next ticket</span>
               <ArrowIcon />
             </button>
           </div>
         </section>
       )}
 
-      <footer className="apple-scanner-footer">
-        <span className="apple-footer-brand">
-          ENTRY
-          <span>PASS</span>
+      <footer className="nd-footer">
+        <span className="nd-footer-brand">
+          NAV <strong>Durga</strong>
         </span>
 
-        <span className="apple-footer-copy">Made by, Anirudh Sonawane</span>
+        <span className="nd-footer-copy">EVENT ACCESS · GATE 01</span>
+
+        <span className="nd-footer-maker">Made by, Anirudh Sonawane</span>
       </footer>
     </main>
   );
