@@ -1,9 +1,9 @@
-import { NextRequest } from "next/server";
-
+import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
 export const runtime = "nodejs";
 
+const MAX_SCANS = 2;
 const VENUE = "Gurukul School Near Darga Road";
 
 type ScanPayload = {
@@ -13,396 +13,206 @@ type ScanPayload = {
 };
 
 type TicketType = "SINGLE" | "COUPLE";
+type TicketTable = "single_tickets" | "couple_tickets";
 
-type Ticket = {
+type TicketRow = {
   id: string;
   ticket_code: string;
   qr_token: string;
   status: string;
   created_at: string;
   scanned_at: string | null;
-  ticket_type: TicketType;
+  scan_count: number | null;
+};
+
+type FoundTicket = {
+  ticket: TicketRow;
+  ticketType: TicketType;
+  table: TicketTable;
 };
 
 function isValidString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
-/* =========================================================
-   FORMAT TICKET TYPE
-   ========================================================= */
-
-function normalizeTicketType(ticketType: TicketType): string {
-  if (ticketType === "SINGLE") {
-    return "Single";
-  }
-
-  return "Couple";
+function formatTicketType(type: TicketType): string {
+  return type === "SINGLE" ? "Single" : "Couple";
 }
 
-/* =========================================================
-   FORMAT RESPONSE
-   ========================================================= */
-
-function ticketResponse(ticket: Ticket) {
+function responseTicket(found: FoundTicket, scanCount: number) {
   return {
-    ticketId: ticket.ticket_code,
-
-    ticketType: normalizeTicketType(ticket.ticket_type),
-
-    date: ticket.created_at,
-
+    ticketId: found.ticket.ticket_code,
+    ticketType: formatTicketType(found.ticketType),
+    date: found.ticket.created_at,
     venue: VENUE,
-
-    scannedAt: ticket.scanned_at,
+    scannedAt: found.ticket.scanned_at,
+    scanCount,
+    scanLimit: MAX_SCANS,
+    scansRemaining: Math.max(0, MAX_SCANS - scanCount),
   };
 }
 
-/* =========================================================
-   FIND TICKET
-   ========================================================= */
+async function findTicket(qrToken: string, ticketCode: string): Promise<FoundTicket | null> {
+  const tables: Array<{ table: TicketTable; ticketType: TicketType }> = [
+    { table: "single_tickets", ticketType: "SINGLE" },
+    { table: "couple_tickets", ticketType: "COUPLE" },
+  ];
 
-async function findTicket(qrToken: string, ticketCode: string) {
-  /*
-   * =======================================================
-   * FIRST: SEARCH SINGLE TICKETS
-   * =======================================================
-   */
+  for (const entry of tables) {
+    let query = supabaseAdmin
+      .from(entry.table)
+      .select("id, ticket_code, qr_token, status, created_at, scanned_at, scan_count");
 
-  let singleQuery = supabaseAdmin.from("single_tickets").select(
-    `
-        id,
-        ticket_code,
-        qr_token,
-        status,
-        created_at,
-        scanned_at
-      `,
-  );
+    query = qrToken ? query.eq("qr_token", qrToken) : query.eq("ticket_code", ticketCode);
+    const { data, error } = await query.maybeSingle();
 
-  if (qrToken) {
-    singleQuery = singleQuery.eq("qr_token", qrToken);
-  } else {
-    singleQuery = singleQuery.eq("ticket_code", ticketCode);
-  }
+    if (error) {
+      console.error(`Ticket lookup failed in ${entry.table}:`, error);
+      throw new Error("Unable to search tickets.");
+    }
 
-  const { data: singleTicket, error: singleError } =
-    await singleQuery.maybeSingle();
-
-  if (singleError) {
-    console.error("Single ticket lookup error:", singleError);
-
-    throw new Error("Unable to search single tickets.");
-  }
-
-  if (singleTicket) {
-    return {
-      ticket: {
-        ...singleTicket,
-        ticket_type: "SINGLE" as const,
-      } as Ticket,
-
-      table: "single_tickets" as const,
-    };
-  }
-
-  /*
-   * =======================================================
-   * SECOND: SEARCH COUPLE TICKETS
-   * =======================================================
-   */
-
-  let coupleQuery = supabaseAdmin.from("couple_tickets").select(
-    `
-        id,
-        ticket_code,
-        qr_token,
-        status,
-        created_at,
-        scanned_at
-      `,
-  );
-
-  if (qrToken) {
-    coupleQuery = coupleQuery.eq("qr_token", qrToken);
-  } else {
-    coupleQuery = coupleQuery.eq("ticket_code", ticketCode);
-  }
-
-  const { data: coupleTicket, error: coupleError } =
-    await coupleQuery.maybeSingle();
-
-  if (coupleError) {
-    console.error("Couple ticket lookup error:", coupleError);
-
-    throw new Error("Unable to search couple tickets.");
-  }
-
-  if (coupleTicket) {
-    return {
-      ticket: {
-        ...coupleTicket,
-        ticket_type: "COUPLE" as const,
-      } as Ticket,
-
-      table: "couple_tickets" as const,
-    };
+    if (data) {
+      return { ticket: data as TicketRow, ticketType: entry.ticketType, table: entry.table };
+    }
   }
 
   return null;
 }
 
-/* =========================================================
-   POST
-   ========================================================= */
-
 export async function POST(request: NextRequest): Promise<Response> {
   try {
-    const body = (await request.json()) as ScanPayload;
-
-    /*
-     * =====================================================
-     * GET QR TOKEN
-     * =====================================================
-     *
-     * New QR codes contain ONLY qr_token.
-     *
-     * Example:
-     *
-     * "7c4c0d9e-..."
-     *
-     * No JSON is expected inside the QR.
-     */
+    let body: ScanPayload;
+    try {
+      body = (await request.json()) as ScanPayload;
+    } catch {
+      return NextResponse.json(
+        { success: false, valid: false, status: "INVALID", message: "Invalid scan request." },
+        { status: 400 },
+      );
+    }
 
     const qrToken = isValidString(body.qrToken)
       ? body.qrToken.trim()
       : isValidString(body.token)
         ? body.token.trim()
         : "";
-
-    const ticketCode = isValidString(body.ticketCode)
-      ? body.ticketCode.trim()
-      : "";
+    const ticketCode = isValidString(body.ticketCode) ? body.ticketCode.trim() : "";
 
     if (!qrToken && !ticketCode) {
-      return Response.json(
-        {
-          success: false,
-          valid: false,
-          status: "INVALID",
-          message: "Invalid QR code.",
-        },
-        {
-          status: 400,
-        },
+      return NextResponse.json(
+        { success: false, valid: false, status: "INVALID", message: "Invalid QR code." },
+        { status: 400 },
       );
     }
 
-    /* =====================================================
-       FIND TICKET
-       ===================================================== */
-
-    const result = await findTicket(qrToken, ticketCode);
-
-    /*
-     * =====================================================
-     * TICKET NOT FOUND
-     * =====================================================
-     */
-
-    if (!result) {
-      return Response.json(
-        {
-          success: false,
-          valid: false,
-          status: "INVALID",
-          message: "Invalid ticket or QR code.",
-        },
-        {
-          status: 404,
-        },
+    const found = await findTicket(qrToken, ticketCode);
+    if (!found) {
+      return NextResponse.json(
+        { success: false, valid: false, status: "INVALID", message: "Invalid ticket or QR code." },
+        { status: 404 },
       );
     }
 
-    const ticket = result.ticket;
+    // Retry the atomic compare-and-swap if another scanner updates this ticket at the same time.
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const { data: current, error: readError } = await supabaseAdmin
+        .from(found.table)
+        .select("id, ticket_code, qr_token, status, created_at, scanned_at, scan_count")
+        .eq("id", found.ticket.id)
+        .maybeSingle();
 
-    const table = result.table;
-
-    /* =====================================================
-       ALREADY USED
-       ===================================================== */
-
-    if (ticket.status === "USED") {
-      return Response.json(
-        {
-          success: false,
-
-          valid: false,
-
-          status: "USED",
-
-          message: "Ticket already used.",
-
-          ticket: ticketResponse(ticket),
-        },
-        {
-          status: 409,
-        },
-      );
-    }
-
-    /* =====================================================
-       ATOMIC CHECK-IN
-       =====================================================
-       
-       Only UNUSED tickets can be changed.
-
-       scanned_at is written at the exact moment
-       the ticket is successfully scanned.
-    */
-
-    const scannedAt = new Date().toISOString();
-
-    const { data: updatedRows, error: updateError } = await supabaseAdmin
-      .from(table)
-      .update({
-        status: "USED",
-
-        scanned_at: scannedAt,
-      })
-      .eq("id", ticket.id)
-      .eq("status", "UNUSED")
-      .select(
-        `
-          id,
-          ticket_code,
-          qr_token,
-          status,
-          created_at,
-          scanned_at
-        `,
-      );
-
-    /* =====================================================
-       UPDATE ERROR
-       ===================================================== */
-
-    if (updateError) {
-      console.error("Ticket scan update error:", updateError);
-
-      return Response.json(
-        {
-          success: false,
-          valid: false,
-          status: "ERROR",
-          message: "Unable to complete ticket check-in.",
-        },
-        {
-          status: 500,
-        },
-      );
-    }
-
-    /* =====================================================
-       ANOTHER SCANNER WON THE RACE
-       =====================================================
-       
-       Example:
-
-       Scanner A scans at 18:42:01
-       Scanner B scans at 18:42:01
-
-       Only one scanner should be accepted.
-    */
-
-    if (!updatedRows || updatedRows.length === 0) {
-      const { data: currentTicket, error: currentTicketError } =
-        await supabaseAdmin
-          .from(table)
-          .select(
-            `
-            id,
-            ticket_code,
-            qr_token,
-            status,
-            created_at,
-            scanned_at
-          `,
-          )
-          .eq("id", ticket.id)
-          .maybeSingle();
-
-      if (currentTicketError) {
-        console.error("Unable to read current ticket:", currentTicketError);
+      if (readError || !current) {
+        console.error("Ticket read before check-in failed:", readError);
+        return NextResponse.json(
+          { success: false, valid: false, status: "ERROR", message: "Unable to read ticket." },
+          { status: 500 },
+        );
       }
 
-      const alreadyUsedTicket: Ticket = {
-        ...(currentTicket ?? ticket),
+      const currentCount = Math.max(0, Number(current.scan_count ?? 0));
+      const currentTicket: TicketRow = current as TicketRow;
+      found.ticket = currentTicket;
 
-        ticket_type: ticket.ticket_type,
-      } as Ticket;
+      if (currentCount >= MAX_SCANS) {
+        return NextResponse.json(
+          {
+            success: false,
+            valid: false,
+            status: "EXHAUSTED",
+            message: "Scan limit reached. This QR code has already been accepted twice.",
+            ticket: responseTicket(found, currentCount),
+          },
+          { status: 409 },
+        );
+      }
 
-      return Response.json(
-        {
-          success: false,
-
-          valid: false,
-
+      const nextCount = currentCount + 1;
+      const scannedAt = new Date().toISOString();
+      const { data: updated, error: updateError } = await supabaseAdmin
+        .from(found.table)
+        .update({
+          scan_count: nextCount,
           status: "USED",
+          scanned_at: scannedAt,
+        })
+        .eq("id", current.id)
+        .eq("scan_count", current.scan_count ?? 0)
+        .select("id, ticket_code, qr_token, status, created_at, scanned_at, scan_count")
+        .maybeSingle();
 
-          message: "Ticket already used.",
+      if (updateError) {
+        console.error("Ticket scan update failed:", updateError);
+        return NextResponse.json(
+          { success: false, valid: false, status: "ERROR", message: "Unable to complete ticket check-in." },
+          { status: 500 },
+        );
+      }
 
-          ticket: ticketResponse(alreadyUsedTicket),
-        },
-        {
-          status: 409,
-        },
-      );
+      if (!updated) {
+        // A concurrent scanner changed scan_count; read again and re-check the limit.
+        continue;
+      }
+
+      found.ticket = updated as TicketRow;
+      return NextResponse.json({
+        success: true,
+        valid: true,
+        status: "USED",
+        message: `Entry valid. Scan ${nextCount} of ${MAX_SCANS} accepted.`,
+        ticket: responseTicket(found, nextCount),
+      });
     }
 
-    /* =====================================================
-       FIRST SUCCESSFUL SCAN
-       ===================================================== */
+    const { data: latest } = await supabaseAdmin
+      .from(found.table)
+      .select("id, ticket_code, qr_token, status, created_at, scanned_at, scan_count")
+      .eq("id", found.ticket.id)
+      .maybeSingle();
+    const latestCount = Math.max(0, Number(latest?.scan_count ?? 0));
 
-    const checkedInTicket: Ticket = {
-      ...(updatedRows[0] as Omit<Ticket, "ticket_type">),
-
-      ticket_type: ticket.ticket_type,
-    };
-
-    return Response.json(
+    return NextResponse.json(
       {
-        success: true,
-
-        valid: true,
-
-        status: "USED",
-
-        message: "Entry valid.",
-
-        ticket: ticketResponse(checkedInTicket),
+        success: false,
+        valid: false,
+        status: latestCount >= MAX_SCANS ? "EXHAUSTED" : "ERROR",
+        message:
+          latestCount >= MAX_SCANS
+            ? "Scan limit reached. This QR code has already been accepted twice."
+            : "Could not safely record this scan. Please try again.",
+        ...(latest ? { ticket: responseTicket({ ...found, ticket: latest as TicketRow }, latestCount) } : {}),
       },
-      {
-        status: 200,
-      },
+      { status: latestCount >= MAX_SCANS ? 409 : 503 },
     );
   } catch (error) {
     console.error("Ticket scan error:", error);
-
-    return Response.json(
+    return NextResponse.json(
       {
         success: false,
-
         valid: false,
-
         status: "ERROR",
-
-        message:
-          error instanceof Error ? error.message : "Invalid scan request.",
+        message: error instanceof Error ? error.message : "Invalid scan request.",
       },
-      {
-        status: 500,
-      },
+      { status: 500 },
     );
   }
 }
